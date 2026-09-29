@@ -25,7 +25,7 @@
    that fails is forgotten without a word.
 
    KNOWN LIMIT, to be lived with rather than fixed: the PACS hand-off —
-   the "#load=" manifest fetch at index.html:9224 — does not work in this
+   the "#load=" manifest fetch in js/deeplink.js — does not work in this
    standalone app. The PACS echoes CORS only for a configured http(s)
    editor_url, and this origin is app://. That is expected: this build is
    for people who do not run a PACS. Someone who does should open the

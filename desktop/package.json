@@ -23,6 +23,8 @@
     "files": ["main.js", "preload.js", "i18n.js", "assets/**/*"],
     "extraResources": [
       { "from": "../index.html", "to": "web/index.html" },
+      { "from": "../app.css", "to": "web/app.css" },
+      { "from": "../js", "to": "web/js" },
       { "from": "../i18n.js", "to": "web/i18n.js" },
       { "from": "../carino-lang.js", "to": "web/carino-lang.js" },
       { "from": "../carino-clock.js", "to": "web/carino-clock.js" },

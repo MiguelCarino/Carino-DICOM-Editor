@@ -10,7 +10,7 @@ name: Build desktop app
 # Python and cannot cross-compile; do not "unify" the two workflows on that basis.
 # There is no engine to freeze here: unlike Carino DICOM, this app ships no
 # Python, so the whole build is `npm install` and electron-builder. The web
-# payload it packages (index.html, vendor/, fonts/, tests/dicom-forge.js …) is
+# payload it packages (index.html, app.css, js/, vendor/, fonts/, tests/dicom-forge.js …) is
 # already in the checkout and is pulled in by desktop/package.json's
 # extraResources, one level up from the desktop/ project directory.
 #
@@ -204,7 +204,7 @@ jobs:
           set -euo pipefail
           ls -l dist
           # A hyphen means a pre-release: v1.0.1-rc01 is one, v1.0.0 is not. The
-          # distinction is not cosmetic — index.html asks for /releases/latest,
+          # distinction is not cosmetic — js/desktop-download.js asks for /releases/latest,
           # which skips pre-releases, so this flag decides whether a tag makes the
           # download card appear at all.
           case "$GITHUB_REF_NAME" in

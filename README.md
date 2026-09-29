@@ -1,7 +1,7 @@
 # Carino DICOM Editor
 
-Carino DICOM Editor is a browser-based DICOM file metadata editor (single static
-`index.html`, uses [dcmjs](https://github.com/dcmjs-org/dcmjs)). View, edit, create,
+Carino DICOM Editor is a browser-based DICOM file metadata editor (static
+`index.html` + `app.css` + plain classic scripts in `js/`, no build step, uses [dcmjs](https://github.com/dcmjs-org/dcmjs)). View, edit, create,
 compare, validate and **de-identify** DICOM objects entirely client-side — no upload,
 no server. The repository was `DICOM-editor` until the rename; GitHub redirects the
 old name, so an existing clone keeps working without being touched.
@@ -261,6 +261,9 @@ nothing at runtime touches the network.
 
 ### Not covered / limitations
 
+- An edited export of a **big-endian** file (`1.2.840.10008.1.2.2`) is relabelled
+  Explicit VR Little Endian without swapping its 16-bit samples, so pixel values come out
+  wrong (4095 reads back as 3855). Redaction swaps them correctly; a plain edit does not yet.
 - Pixel redaction cannot reach **High-Throughput JPEG 2000** (`1.2.840.10008.1.2.4.201`
   and `.202`) or **MPEG/H.264** images: there is no decoder for them here, so those are
   refused by name rather than half-done. **12-bit JPEG Extended** can only be decoded at 8

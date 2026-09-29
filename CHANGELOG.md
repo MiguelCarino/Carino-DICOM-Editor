@@ -3,6 +3,41 @@
 All notable changes to Carino DICOM Editor. Versions follow [Semantic Versioning](https://semver.org/).
 Licensed under **AGPL-3.0-or-later** (see [LICENSE](LICENSE)).
 
+## [Unreleased]
+
+### Changed
+- `index.html` is split into `app.css` and plain classic scripts under `js/`
+  (loaded in the original order, no build step). The code is moved verbatim,
+  with one exception: `JPEG_LOSSLESS_MODULE` in `js/preview.js` is now
+  `'../vendor/lossless-min.js'`, because `import()` in a classic script resolves
+  against the script's own URL (`js/`), not the page's.
+- Comments and docs that named `index.html` for code that moved now name the
+  new file: `.github/workflows/desktop-build.yml` (packaged payload list, the
+  `/releases/latest` fetch), `tests/gallery.html` (token block now in
+  `app.css`), `fonts.css` (font stacks now in `app.css`), `desktop/main.js`
+  and `desktop/preload.js`.
+
+- `TAG_DICT` (836 hand-written tag entries) is replaced by `TAG_CATS` in
+  `js/dictionary.js`: only the tags whose filter category the group rule gets
+  wrong. Every tag keeps the category it had.
+- Shared `$()` and `T()` helpers in `js/utils.js` replace 169
+  `document.getElementById(` and 101 `(window.t||String)(` call sites.
+- Repeated colours in `app.css` are tokens (`--bg`, `--field`, `--raised`,
+  `--on-accent`, `--sev-*`). Text on gold hover fills moves from `#050505` to
+  `#0a0a0a`, the value the other gold buttons already used.
+- Comments trimmed to the why (standard references, security and ordering
+  constraints); history lives in git. `tests/README.md` is cut to 118 lines.
+
+### Fixed
+- Tag names and VRs now come from the PS3.6 dictionary. The old hand-written
+  table overrode about 40 tags with the wrong name (e.g. (0018,9181) showed as
+  "Gradient Output", (0008,1163) as "Dimension Organization UID") and gave no
+  VR for its 836 tags when reading implicit-VR files. Names now use the
+  standard wording ("Patient's Name", not "Patient Name").
+- Input during page load is held back until every script has run
+  (`js/gate.js`, released on `DOMContentLoaded`). Without it, a file dropped
+  mid-load reached `handleFiles()` before its helpers existed and was lost.
+
 ## [1.0.0] — 2026-08-30
 
 First tagged release. One static `index.html`, everything client-side.

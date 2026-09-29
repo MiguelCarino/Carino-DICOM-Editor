@@ -18,8 +18,8 @@
    validated, so a compromised renderer cannot turn shell.openExternal
    into an arbitrary launcher.
 
-   index.html feature-detects this object and does nothing at all when it
-   is absent, which is what keeps the browser build and the copy vendored
+   js/desktop-download.js feature-detects this object and does nothing at
+   all when it is absent, which is what keeps the browser build and the copy vendored
    into the PACS byte-identical to this repo's.
    ============================================================ */
 "use strict";
