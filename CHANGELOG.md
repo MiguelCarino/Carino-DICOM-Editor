@@ -36,6 +36,9 @@ Licensed under **AGPL-3.0-or-later** (see [LICENSE](LICENSE)).
   `index.html` are classes in `app.css`. No visible change.
 
 ### Fixed
+- Exporting an edited **Explicit VR Big Endian** file wrote its word-sized binary
+  values (OW pixels and LUTs, OL, OF, OD) unswapped under a little-endian label,
+  so 4095 came back as 65295. They are now swapped on a copy at export.
 - Tag names and VRs now come from the PS3.6 dictionary. The old hand-written
   table overrode about 40 tags with the wrong name (e.g. (0018,9181) showed as
   "Gradient Output", (0008,1163) as "Dimension Organization UID") and gave no

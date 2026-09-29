@@ -261,9 +261,6 @@ nothing at runtime touches the network.
 
 ### Not covered / limitations
 
-- An edited export of a **big-endian** file (`1.2.840.10008.1.2.2`) is relabelled
-  Explicit VR Little Endian without swapping its 16-bit samples, so pixel values come out
-  wrong (4095 reads back as 3855). Redaction swaps them correctly; a plain edit does not yet.
 - Pixel redaction cannot reach **High-Throughput JPEG 2000** (`1.2.840.10008.1.2.4.201`
   and `.202`) or **MPEG/H.264** images: there is no decoder for them here, so those are
   refused by name rather than half-done. **12-bit JPEG Extended** can only be decoded at 8
