@@ -27,6 +27,13 @@ Licensed under **AGPL-3.0-or-later** (see [LICENSE](LICENSE)).
   `#0a0a0a`, the value the other gold buttons already used.
 - Comments trimmed to the why (standard references, security and ordering
   constraints); history lives in git. `tests/README.md` is cut to 118 lines.
+- The long functions are split into named top-level helpers, same behaviour:
+  `decodeDicomPixels()` and `decodeStoredFrames()` (one helper per transfer
+  syntax / codec step), `renderTable()`, `validateDicom()` (one per check),
+  `renderSelfTest()` and `handleFiles()`.
+- Unused CSS is gone (the old Validator tab, compare-drop/stats, file tabs,
+  `.social-btn`, `.pill.glow`), and static inline `style=""` attributes in
+  `index.html` are classes in `app.css`. No visible change.
 
 ### Fixed
 - Tag names and VRs now come from the PS3.6 dictionary. The old hand-written
