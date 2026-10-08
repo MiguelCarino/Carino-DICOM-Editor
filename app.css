@@ -1559,4 +1559,26 @@
         max-width: min(560px, 45vh);
       }
       #previewCard > .sr-view { flex: none; }
+
+      /* One column narrower than the UID box's 200px input: it wraps instead of pushing Apply past the
+         clipped right edge. */
+      .uid-pattern { flex-wrap: wrap; min-width: 0; max-width: 100%; }
+      .uid-pattern input { flex: 1 1 120px; min-width: 0; width: auto; }
+      .uid-pattern-value { min-width: 0; overflow-wrap: anywhere; }
+    }
+    /* Stacked, the tag table drops its 640px floor so Value fits beside the other three columns.
+       Description breaks anywhere, or its longest word would take Value's room; its min-width stops a
+       short header (ja) letting it shrink to a letter per line. Under 360px Value would be a sliver,
+       so the 640px table and its sideways scroll stay; compare's six columns keep them too. */
+    @media (max-width: 1000px) and (min-width: 360px) {
+      #tableWrap table:has(#cmpHeadB.hidden) { min-width: 0; }
+      .desc-cell { display: inline-block; min-width: 78px; overflow-wrap: anywhere; }
+    }
+    /* Phone: the cell padding, Tag's fixed 140px and its chip's spacing are the width Value needs. */
+    @media (max-width: 640px) {
+      tbody td { padding: 8px 6px; }
+      thead th { padding: 10px 6px; }
+      .col-tag { width: auto; }
+      .tag-cell { gap: 4px; }
+      .tag-code { padding: 3px 4px; }
     }

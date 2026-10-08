@@ -60,6 +60,14 @@ Licensed under **AGPL-3.0-or-later** (see [LICENSE](LICENSE)).
   reached. `.app` now has a `minmax(0, 1fr)` column, and at 700px or less the
   tabs move to a full-width second row of the header (below 380px with less
   padding, so all four fit down to 320px in every language).
+- On Edit at phone width the tag table kept its 640px minimum, so every Value
+  input sat past the right edge (419-647px at 390px) behind a sideways scroll,
+  and the UID Pattern box pushed Apply off screen. Stacked (1000px or less), the
+  UID box wraps, and from 360px up the table shrinks to fit in every language
+  (Value about 92px wide at 390px, 62px at 360px). To make room, a long
+  description can break mid-word ("Implementat/ion") until phones get stacked
+  rows. Under 360px, and in compare, the 640px table stays and scrolls sideways
+  to full-width Value fields.
 
 ## [1.0.0] — 2026-08-30
 

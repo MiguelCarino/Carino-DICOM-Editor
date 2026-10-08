@@ -61,6 +61,47 @@
       }
     }
 
+    // Edit, stacked: Value is the only editable column, and the tag table scrolls sideways, so an
+    // input past the wrap's edge is reachable only by a scroll nobody expects on a phone.
+    const editNarrow = async (g, W, lang) => {
+      const $g = id => g.doc.getElementById(id);
+      $g('editorTabBtn').click();
+      g.win.eval('revealImgEditCard()');
+      await new Promise(r => setTimeout(r, 30));
+      const inputs = [...g.doc.querySelectorAll('#tagBody .val-input')].filter(el => el.getBoundingClientRect().width);
+      const tag = lang ? `${W}px ${lang}` : `${W}px`;
+      if (W >= 360) {
+        const bad = inputs.map(el => [el.dataset.tag, reach(g, el)]).filter(([, why]) => why);
+        ok(`phone: ${tag} edit: every tag value input is on screen (${inputs.length})`, inputs.length && !bad.length,
+           bad.slice(0, 3).map(([t, why]) => `${t} ${why}`).join('; ') || 'no inputs');
+        // Description breaks anywhere; ja's short header once let it shrink to a letter per line.
+        const narrow = Math.min(...[...g.doc.querySelectorAll('#tagBody .desc-cell')].map(el => el.parentElement.getBoundingClientRect().width || Infinity));
+        ok(`phone: ${tag} edit: the Description column keeps at least 78px`, narrow >= 77.5, `${Math.round(narrow)}px`);
+      } else {
+        // Four columns at 320 would leave Value a sliver; the scroll it keeps has to lead somewhere readable.
+        const thin = inputs.filter(el => el.getBoundingClientRect().width < 80);
+        ok(`phone: ${tag} edit: every tag value input is at least 80px wide (${inputs.length})`, inputs.length && !thin.length,
+           thin.slice(0, 3).map(el => `${el.dataset.tag} ${Math.round(el.getBoundingClientRect().width)}px`).join('; ') || 'no inputs');
+      }
+      if (lang) return;
+      for (const id of ['imgRedact', 'folderBtn', 'filesBtn', 'applyPrefixBtn']) {
+        const why = reach(g, $g(id));
+        ok(`phone: ${tag} edit: #${id} is on screen`, !why, why);
+      }
+    };
+    await editNarrow(f, 390);
+    // Compare's two value columns and copy arrows would be crushed to nothing, so they keep the floor.
+    $('cmpHeadB').classList.remove('hidden');
+    const cmpW = f.doc.querySelector('#tableWrap table').getBoundingClientRect().width;
+    $('cmpHeadB').classList.add('hidden');
+    ok('phone: compare keeps the 640px table and scrolls sideways', cmpW >= 639.5, `${Math.round(cmpW)}px`);
+    // ru's VALUE header is the widest minimum of any locale, ja's Description header the narrowest.
+    for (const [W, lang] of [[360], [360, 'ru'], [390, 'ja'], [320]]) {
+      const g = await open(W, 700, lang);
+      if (g.loaded) await editNarrow(g, W, lang);
+      else ok(`phone: ${W}px ${lang || ''} edit: sample loaded`, false);
+    }
+
     // The tabs get their own full-width row under brand and controls.
     const nav = f.doc.querySelector('.tab-nav').getBoundingClientRect();
     const right = f.doc.querySelector('.header-right').getBoundingClientRect();
