@@ -55,6 +55,11 @@ Licensed under **AGPL-3.0-or-later** (see [LICENSE](LICENSE)).
   characters is refused, and Apply asks first ("Rewrite N UIDs in M files…?").
   The rewrite clears the undo history: Undo only restored the open file, so it
   left that one file on the old root and split the study.
+- On a phone the page was wider than the screen (659px at 390px), and with the
+  page itself not scrollable, Create, Info, Download and Search could not be
+  reached. `.app` now has a `minmax(0, 1fr)` column, and at 700px or less the
+  tabs move to a full-width second row of the header (below 380px with less
+  padding, so all four fit down to 320px in every language).
 
 ## [1.0.0] — 2026-08-30
 
