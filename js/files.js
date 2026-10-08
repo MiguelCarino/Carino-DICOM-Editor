@@ -395,17 +395,23 @@ function bigEndianToLE(node) {
 
 // Encode one file with ITS OWN pending edits (not the global pendingEdits, which would
 // stamp the current file's values, e.g. SOP Instance UID, onto every file).
-function buildEditedBytes(entry) {
-  // Shallow copy is safe: changed tags are replaced (never mutated) and DicomDict.write()
-  // only reads its input. Guarded by 'writing a file does not disturb the file' in
-  // tests/suites/edits.js, which fails if a dcmjs update starts mutating its input.
-  let d = { ...entry.dict };
+// The file as it would be written: the editor's copy (redactions, turns) plus its pending tag
+// edits. Shallow copy is safe: changed tags are replaced (never mutated) and DicomDict.write()
+// only reads its input. Guarded by 'writing a file does not disturb the file' in
+// tests/suites/edits.js, which fails if a dcmjs update starts mutating its input.
+function withPendingEdits(entry) {
+  const d = { ...entry.dict };
   pendingOf(entry).forEach(({ vr, valueString }, t) => {
     // Path keys must not reach d[t]: dcmjs parses '00081140/0/00100010' as (0008,1140)
     // and would silently replace the whole sequence with the leaf.
     if (t.includes('/')) { assignPath(d, t, vr, valueString); return; }
     if (!isReadOnly(t, vr)) d[t] = { vr, Value: parseByVR(vr, valueString, entry.dict[t]?.Value?.[0]) };
   });
+  return d;
+}
+
+function buildEditedBytes(entry) {
+  let d = withPendingEdits(entry);
   // Drop group length tags (gggg,0000): stale after any edit, and dcmjs throws on private ones.
   Object.keys(d).forEach(t => {
     const hex = (t.startsWith('x') ? t.slice(1) : t).toLowerCase();

@@ -605,10 +605,11 @@
     <div class="extractor-left">
       <div class="top-bar">
         <div class="pill" id="extractorCount" data-i18n data-i18n-key="Files: {n}" data-i18n-n="0">Files: 0</div>
-        <button class="btn" id="extractorAddBtn" data-i18n>+ Load DCM Files</button>
+        <span class="extractor-source" id="extractorSource" hidden></span>
+        <button class="btn" id="extractorAddBtn" data-i18n>+ Add other files</button>
         <input id="extractorFileInput" type="file" multiple hidden />
         <div class="actions-spacer"></div>
-        <button class="btn" id="clearExtractorBtn" data-i18n>Clear All</button>
+        <button class="btn" id="clearExtractorBtn" data-i18n hidden>Clear added files</button>
       </div>
       <div class="extractor-grid-wrap" id="extractorGridWrap">
         <div id="extractorGrid">

@@ -173,6 +173,8 @@ function switchTab(tab) {
   if (tab !== 'overview' && typeof ovStopCine === 'function') ovStopCine();
   // Wheel-paging in Overview deliberately left the tag table stale; refresh it now.
   if (tab === 'editor' && dict && editorStale) { editorStale = false; syncEditorUI(); }
+  // Extract shows the open study as it stands now, edits included.
+  if (tab === 'extractor' && typeof renderExtractorGrid === 'function') renderExtractorGrid();
 }
 
 for (const [id, btn] of ALL_TABS) btn.addEventListener('click', () => switchTab(id));

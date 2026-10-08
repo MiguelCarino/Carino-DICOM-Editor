@@ -128,7 +128,7 @@
       'Copy every differing value from {name} onto this file? This overwrites its values.',
       '{host} wants to open {n} file(s) in this editor.', 'Loaded {n} image(s) from {from}',
       'Nothing from {from} could be read as DICOM', 'Tag {tag} added', 'Images: {n}', 'Files: {n}',
-      'Copy →', 'Copy ←', 'Cleared all files', 'Cleared all images', 'PACS hand-off failed:',
+      'Copy →', 'Copy ←', 'Cleared the added files', 'Cleared all images', 'PACS hand-off failed:',
       'PACS deep-link failed:', 'No response from Carino DICOM'];
     for (const loc of LOCALES) {
       const bad = JS_KEYS.filter(k => !I18N[loc]?.[k] ||
@@ -143,9 +143,9 @@
     ok('?lang=ja: #confirmMsg is not English', msg === I18N.ja[KEY] && !/[a-z]{4}/i.test(msg), msg.slice(0, 60));
     ok('?lang=ja: and neither is its OK button', $('confirmOk').textContent === I18N.ja['Copy →'], $('confirmOk').textContent);
     $('confirmCancel').click();
-    toast('Cleared all files');
+    toast('Cleared the added files');
     const toastText = document.querySelector('.toast')?.textContent;
-    ok('?lang=ja: a toast given the English key is shown in Japanese', toastText === I18N.ja['Cleared all files'], toastText);
+    ok('?lang=ja: a toast given the English key is shown in Japanese', toastText === I18N.ja['Cleared the added files'], toastText);
     document.querySelector('.toast')?.remove();
 
     setCountPill(createImgCount, 3);

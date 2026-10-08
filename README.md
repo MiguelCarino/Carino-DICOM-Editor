@@ -270,9 +270,10 @@ nothing at runtime touches the network.
   depth, but the decode runs on the main thread — a large mammogram takes a noticeable
   fraction of a second per frame, and an Extract run over a range of them will hold the
   page while it works.
-- Redaction applies to the editor's copy of the file. A file dropped separately into the
-  **Extract** tab keeps its own copy, and a PNG exported from there will still show the
-  banner.
+- Redaction applies to the editor's copy of the file. The **Extract** tab exports the open
+  study from that copy, redactions and pending tag edits included; a file dropped
+  separately into Extract keeps its own copy, is drawn with a dashed border, and a PNG
+  exported from it will still show the banner.
 - Rotating and flipping reach the pixel data and the image geometry, and **nothing else
   that names a position**. Overlay planes (`60xx,3000`), Sequence of Ultrasound Regions
   (`0018,6011`) and Graphic Annotation Sequence (`0070,0001`) are left where they are, and

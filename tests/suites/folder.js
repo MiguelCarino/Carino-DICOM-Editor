@@ -359,6 +359,47 @@
       extractorFiles = [];
     }
 
+    // ---- Extract reads the open study --------------------------------------
+    // It used to open on an empty list, and a file loaded into it a second time
+    // brought back the banner the editor had redacted.
+    {
+      extractorFiles = [];
+      await handleFiles([dcm('a.dcm', 0), dcm('b.dcm', 1)]);
+      const key = editKey('00281050');
+      pendingOf(files[0]).set(key, { vr: 'DS', valueString: '123' });
+      const items = extractorItems();
+      ok('Extract lists the open study without being given it',
+         items.length === 2 && items.every(x => x.fromStudy), String(items.length));
+      ok('with the pending tag edits merged in',
+         Number(lookupTag(items[0].dict, '00281050')?.Value?.[0]) === 123,
+         String(lookupTag(items[0].dict, '00281050')?.Value?.[0]));
+      ok('without writing them into the editor\'s copy',
+         Number(lookupTag(files[0].dict, '00281050')?.Value?.[0]) !== 123);
+      ok('and the pixels are the editor\'s copy, so a redaction carries over',
+         lookupTag(items[0].dict, '7fe00010') === lookupTag(files[0].dict, '7fe00010'));
+
+      await addExtractorFiles([dcm('extra.dcm', 2)]);
+      switchTab('extractor');
+      switchTab('extractor');   // two visits in a row must not draw the grid twice
+      const cards = () => document.querySelectorAll('#extractorGrid .dcm-card').length;
+      ok('a visit draws the study and the added file once each', await settle(() => cards() === 3), String(cards()));
+      ok('only the added file is marked as a separate copy',
+         document.querySelectorAll('#extractorGrid .dcm-card-added').length === 1);
+      ok('the note names the study count',
+         !$('extractorSource').hidden && $('extractorSource').textContent.includes('2'),
+         $('extractorSource').textContent);
+      const shown = (id) => getComputedStyle($(id)).display !== 'none';
+      ok('Clear shows only while something was added', shown('clearExtractorBtn'));
+      $('clearExtractorBtn').click();
+      ok('Clear removes the added files and keeps the study',
+         extractorFiles.length === 0 && extractorItems().length === 2 && !shown('clearExtractorBtn'));
+
+      resetStudyState();
+      await renderExtractorGrid();
+      ok('with no study open the note goes away', $('extractorSource').hidden);
+      switchTab('overview');
+    }
+
     // ---- the picker markup --------------------------------------------------
     {
       const fi = document.getElementById('fileInput');

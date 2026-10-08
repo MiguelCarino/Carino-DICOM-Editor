@@ -6,6 +6,12 @@ Licensed under **AGPL-3.0-or-later** (see [LICENSE](LICENSE)).
 ## [Unreleased]
 
 ### Changed
+- The **Extract** tab now starts from the open study instead of an empty list, so
+  **⤓ Extract image** on the Overview no longer lands on nothing. It reads the study
+  fresh on every visit, through the same merge the download uses, so a redacted banner
+  stays redacted and a saved window or photometric fix reaches the PNG. Files dropped
+  onto Extract are added beside the study (dashed border, since the study's edits do not
+  reach them); **Clear added files** removes only those.
 - `index.html` is split into `app.css` and plain classic scripts under `js/`
   (loaded in the original order, no build step). The code is moved verbatim,
   with one exception: `JPEG_LOSSLESS_MODULE` in `js/preview.js` is now

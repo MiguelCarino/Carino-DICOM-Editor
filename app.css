@@ -1196,6 +1196,10 @@
       transition: all 0.2s;
     }
     .dcm-card:hover { border-color: var(--accent); box-shadow: 0 0 15px var(--accent-glow); }
+    /* A separately added copy, shown beside the open study: it misses the study's edits. */
+    .dcm-card-added { border-style: dashed; }
+    .extractor-source { font-size: 12px; color: var(--text-dim); }
+    #clearExtractorBtn[hidden] { display: none; }
     .dcm-card canvas { width: 100%; aspect-ratio: 1; object-fit: contain; display: block; background: #000; }
     .dcm-card-info {
       padding: 5px 8px;
