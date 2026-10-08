@@ -56,14 +56,14 @@ function confirmDanger(message, onConfirm, confirmLabel = 'Confirm', onCancel) {
 // ---- Toast ----
 let _toastEl = null;
 let _toastTimer = null;
-function toast(msg) {
+function toast(msg, ms = 2400) {
   if (_toastEl) _toastEl.remove();
   _toastEl = document.createElement('div');
   _toastEl.className = 'toast';
   _toastEl.textContent = msg;
   document.body.appendChild(_toastEl);
   clearTimeout(_toastTimer);
-  _toastTimer = setTimeout(() => { _toastEl?.remove(); _toastEl = null; }, 2400);
+  _toastTimer = setTimeout(() => { _toastEl?.remove(); _toastEl = null; }, ms);
 }
 
 // ---- Undo / Redo ----

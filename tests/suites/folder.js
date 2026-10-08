@@ -181,23 +181,28 @@
          await settle(() => files.length === 4), String(files.length));
     }
     // The drop card sits inside the background that now also listens, so without
-    // stopPropagation both handlers run and two handleFiles calls reset files[]
-    // out from under each other — the study arrives doubled.
+    // stopPropagation both handlers run and the drop is loaded twice. The last
+    // load wins, so files[] looks right either way: count the loads instead.
     {
       activeTab = 'overview';
       const ev = new Event('drop', { bubbles: true, cancelable: true });
       Object.defineProperty(ev, 'dataTransfer', { value: { items: [{ kind: 'file', webkitGetAsEntry: () => tree }], files: [] } });
       files = [];
-      document.getElementById('ovDrop').dispatchEvent(ev);
-      await settle(() => files.length >= 4);
-      await settle(() => false, 60);   // let a second, racing load arrive if there is one
-      ok('a drop on the card is not loaded twice', files.length === 4, String(files.length));
+      const real = window.loadStudy;
+      let loads = 0;
+      window.loadStudy = (res) => { loads++; return real(res); };
+      try {
+        document.getElementById('ovDrop').dispatchEvent(ev);
+        await settle(() => files.length >= 4);
+        await settle(() => false, 60);   // let a second, racing load arrive if there is one
+      } finally { window.loadStudy = real; }
+      ok('a drop on the card is not loaded twice', loads === 1 && files.length === 4, `${loads} loads, ${files.length} files`);
     }
 
     // ---- the large-study gate ----------------------------------------------
-    // The confirm has to come before handleFiles, which wipes files, edits and
-    // history at its top: a cancelled load that had already got there would have
-    // destroyed the study the user was looking at.
+    // The confirm has to come before handleFiles, which replaces files, edits and
+    // history once anything parses: a cancelled load that had already got there
+    // would have destroyed the study the user was looking at.
     {
       const keep = files.slice();
       // Only the four bytes at offset 128 decide the gate, and the load is

@@ -102,11 +102,12 @@
     // DOM cannot show us, so an entry missing from the markup is not evidence it
     // is dead. What the number does catch is drift — a dictionary growing while
     // the page does not, which is what happens when controls are rewritten and
-    // their old entries are left behind. It was 107 when this was written.
+    // their old entries are left behind. It was 107 when this was written, 129
+    // once the load-failure toasts arrived.
     const jsOwned = new Set(ATTR_I18N.map(([, , k]) => k));
     const unseen = Object.keys(I18N.es).filter(k => !keys.has(k) && !jsOwned.has(k));
     ok('the dictionaries have not drifted far ahead of the page',
-       unseen.length < 125, `${unseen.length} keys reached from JS or no longer reached at all`);
+       unseen.length < 135, `${unseen.length} keys reached from JS or no longer reached at all`);
   } catch (e) {
     ok('the i18n audit ran', false, (e && e.message) || String(e));
   }

@@ -58,7 +58,7 @@ byte-for-byte deterministic (fixed UIDs, no `Math.random`).
 | Suite | Covers |
 | --- | --- |
 | `boot` | Library scripts (`vendor/dcmjs.min.js`, `deid-profile.js`, `dicom-dictionary.js`) sit below the page markup (not in `<head>`), without `defer`, before `js/dictionary.js`. |
-| `loading` | `handleFiles` read-ahead: bounded by count and bytes, order and per-file failure handling unchanged. |
+| `loading` | `handleFiles` read-ahead: bounded by count and bytes, order and per-file failure handling unchanged. A load where nothing parses keeps the open study, edits and undo history, toasts on any tab and points images at Create; the return value is the parsed count. |
 | `folder` | Folder/study drops: `DICM` sniff, entry-tree walk, `DataTransfer` snapshot, drop routing, `loadStudy` filtering (DICOMDIR, junk, large-folder prompt). |
 | `pixels` | `decodeDicomPixels()` alone: greyscale via `rawFloats` min/max, colour pixel for pixel. |
 | `viewer` | Rendered canvases (Overview `renderOverview`, editor `drawPreview`) against the reference and each other. |

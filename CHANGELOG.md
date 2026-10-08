@@ -68,6 +68,13 @@ Licensed under **AGPL-3.0-or-later** (see [LICENSE](LICENSE)).
   description can break mid-word ("Implementat/ion") until phones get stacked
   rows. Under 360px, and in compare, the 640px table stays and scrolls sideways
   to full-width Value fields.
+- Dropping or opening a file that is not DICOM (a stray JPEG, say) wiped the
+  open study, its edits and the undo history before anything was parsed, and
+  on Overview nothing said why. Files are now parsed first and the study is
+  replaced only if at least one of them loads. Failures still go to the Edit
+  banner and now also to a toast on whichever tab is open; an image is named as
+  one and pointed at Create. `handleFiles()` returns how many files it loaded,
+  which the PACS hand-off now counts instead of `files.length`.
 
 ## [1.0.0] — 2026-08-30
 

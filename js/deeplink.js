@@ -26,13 +26,14 @@ window.addEventListener('load', () => {
       clearTimeout(giveUp);
       showLoading?.(true, 'Copying study from Carino DICOM…');
       try {
-        await handleFiles(incoming);        // shows its own per-image progress
+        const n = await handleFiles(incoming);   // shows its own per-image progress
         // Label by actual origin: a user-approved origin is still not the bundled PACS.
         const from = info.origin === location.origin ? 'Carino DICOM' : new URL(info.origin).host;
-        // Count parsed files, not received ones; handleFiles already reports the failures.
-        if (!files.length) { toast?.(`Nothing from ${from} could be read as DICOM`); return; }
+        // Count parsed files, not received ones (files[] may still hold the previous
+        // study); handleFiles already reports the failures.
+        if (!n) { toast?.(`Nothing from ${from} could be read as DICOM`); return; }
         switchTab('editor');
-        toast?.(`Loaded ${files.length} image(s) from ${from}`);
+        toast?.(`Loaded ${n} image(s) from ${from}`);
       } catch (err) { showLoading?.(false); toast?.('PACS hand-off failed: ' + (err.message || err)); }
     },
   });
@@ -91,9 +92,10 @@ window.addEventListener('load', () => {
         } catch { /* skip a file that won't fetch */ }
       }
       if (!loaded.length) throw new Error('could not fetch any DICOM file');
-      await handleFiles(loaded);
+      const n = await handleFiles(loaded);
+      if (!n) throw new Error('no file could be read as DICOM');
       switchTab('editor');
-      toast?.(`Loaded ${loaded.length} image(s) from Carino DICOM`);
+      toast?.(`Loaded ${n} image(s) from Carino DICOM`);
     } catch (err) {
       showLoading?.(false);
       toast?.('PACS deep-link failed: ' + (err.message || err));

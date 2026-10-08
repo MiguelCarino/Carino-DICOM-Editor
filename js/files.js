@@ -127,7 +127,7 @@ async function loadStudy(res) {
   const junk = all.length - keep.length;
   if (!keep.length) { toast?.(T('No DICOM files in that folder')); return; }
 
-  // Ask before handleFiles: it wipes files, edits and history immediately.
+  // Ask before handleFiles: once anything parses it replaces files, edits and history.
   if (keep.length > LARGE_STUDY) {
     const go = await new Promise(resolve => confirmDanger(
       T('This folder holds {n} DICOM files. Loading all of them may take a while and use a lot of memory.').replace('{n}', keep.length),
@@ -208,22 +208,25 @@ function createReadAheadQueue(arr) {
 }
 
 // Parses one read buffer into a files[] entry; throws on a bad file.
-function addParsedFile(file, path, buf) {
+function parseEntry(file, path, buf) {
   const msg = DicomMessage.readFile(buf);
   normBin(msg.dict);
   // Keep the File handle (not bytes) for on-demand hashing. `name` stays the basename
   // because downloadOne uses it as a.download (no slashes); `path` is display-only.
   const entry = { name: file.name, path, dict: msg.dict, meta: msg.meta || {}, pending: seedPending(msg.dict), file, size: file.size, sha: null, shaState: file.size <= SHA_AUTO_LIMIT ? 'idle' : 'deferred' };
-  files.push(entry);
   if (entry.shaState === 'idle') computeEntrySha(entry, buf);   // fire-and-forget
-  log(`✓ ${path}`);
+  return entry;
 }
 
-function renderLoadFailures(failures) {
+// Failures are only known as parse errors; the name or MIME says it was a picture.
+const isImageFile = (file) => /^image\//.test(file?.type || '') ||
+  /\.(png|jpe?g|gif|bmp|webp|tiff?|heic|heif|avif)$/i.test(file?.name || '');
+
+function renderLoadFailures(failures, note) {
   errorBanner.className = 'error-banner';
   errorBanner.innerHTML = `<summary>⚠ ${failures.length} file${failures.length > 1 ? 's' : ''} failed to load — click to expand</summary><ul>${
     failures.map(f => `<li>${f.name}: ${f.error}</li>`).join('')
-  }</ul>`;
+  }${note ? `<li>${note}</li>` : ''}</ul>`;
 }
 
 function showLoadedStudy() {
@@ -241,16 +244,18 @@ function showLoadedStudy() {
   syncToUI();
 }
 
+// Parses everything first and replaces the open study only if at least one file
+// parsed, so a stray JPEG can't wipe the study, its edits and undo history.
+// The old study stays in memory until the swap. Returns the number of files loaded.
 async function handleFiles(list) {
-  resetStudyState();
-
   const arr = toLoadItems(list);
-  if (!arr.length) return;
+  if (!arr.length) return 0;
 
   showLoading?.(true, `Loading image${arr.length > 1 ? 's' : ''}…`, 0, `0 / ${arr.length}`);
-  log(`Loading ${arr.length} file(s)...`);
 
-  const failures = [];
+  const parsed = [], failures = [];
+  // Logged after the reset below, which clears the log.
+  const lines = [`Loading ${arr.length} file(s)...`];
   const reads = createReadAheadQueue(arr);
 
   let lastYield = performance.now();
@@ -265,12 +270,14 @@ async function handleFiles(list) {
     }
     const slot = reads.next();
     try {
-      addParsedFile(file, path, await slot.p);
+      parsed.push(parseEntry(file, path, await slot.p));
+      lines.push(`✓ ${path}`);
     } catch (e) {
-      const errMsg = e.message || String(e);
+      const image = isImageFile(file);
+      const errMsg = image ? T('an image, not DICOM: use Create →') : (e.message || String(e));
       // Path, not name: same-named slices from different series folders stay distinct.
-      failures.push({ name: path, error: errMsg });
-      log(`✗ ${path}: ${errMsg}`);
+      failures.push({ name: path, error: errMsg, image });
+      lines.push(`✗ ${path}: ${errMsg}`);
     } finally {
       reads.release(slot);
     }
@@ -278,11 +285,25 @@ async function handleFiles(list) {
 
   showLoading?.(false);
 
-  if (failures.length) renderLoadFailures(failures);
+  const kept = !parsed.length && files.length;
+  if (parsed.length) { resetStudyState(); files = parsed; }
+  lines.forEach(l => log(l));
 
-  if (!files.length) return;
+  if (failures.length) {
+    renderLoadFailures(failures, kept && T('The open study is unchanged.'));
+    // The banner lives on Edit; the toast reaches whichever tab is open.
+    const msg = parsed.length ? T('{n} of {m} files could not be read as DICOM.').replace('{n}', failures.length).replace('{m}', arr.length)
+      : failures.length === 1 ? T('{name} could not be read as DICOM.').replace('{name}', failures[0].name)
+      : T('None of the {n} files could be read as DICOM.').replace('{n}', failures.length);
+    toast?.([msg,
+      failures.some(f => f.image) && T('Images go in Create →, which turns them into DICOM.'),
+      kept && T('The open study is unchanged.')].filter(Boolean).join(' '), 7000);
+  }
+
+  if (!parsed.length) return 0;
 
   showLoadedStudy();
+  return parsed.length;
 }
 
 
