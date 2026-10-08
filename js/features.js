@@ -33,7 +33,8 @@ function confirmDanger(message, onConfirm, confirmLabel = 'Confirm', onCancel) {
   const ov = $('confirmOverlay');
   const ok = $('confirmOk');
   const cancel = $('confirmCancel');
-  $('confirmMsg').textContent = message;
+  // Most callers pass T() text already; this catches the ones that pass the English key.
+  $('confirmMsg').textContent = T(message);
   ok.textContent = T(confirmLabel);
   const close = () => {
     ov.classList.remove('visible');
@@ -60,7 +61,7 @@ function toast(msg, ms = 2400) {
   if (_toastEl) _toastEl.remove();
   _toastEl = document.createElement('div');
   _toastEl.className = 'toast';
-  _toastEl.textContent = msg;
+  _toastEl.textContent = T(msg);
   document.body.appendChild(_toastEl);
   clearTimeout(_toastTimer);
   _toastTimer = setTimeout(() => { _toastEl?.remove(); _toastEl = null; }, ms);
@@ -203,9 +204,9 @@ function renderFileBrowser() {
     const head = (s.modality || 'IMG') + (s.num ? ' · #' + s.num : '');
     const count = active
       ? (s.indices.indexOf(currentFileIdx) + 1) + ' / ' + s.indices.length
-      : s.indices.length + (s.indices.length === 1 ? ' image' : ' images');
-    tile.append(mk('st-head', head), mk('st-desc', s.desc || 'Series'), mk('st-count', count));
-    tile.title = (s.desc || 'Series') + ' — ' + s.indices.length + ' image(s)';
+      : T('Images: {n}').replace('{n}', s.indices.length);
+    tile.append(mk('st-head', head), mk('st-desc', s.desc || T('Series')), mk('st-count', count));
+    tile.title = (s.desc || T('Series')) + ' — ' + T('Images: {n}').replace('{n}', s.indices.length);
     tile.addEventListener('click', () => { if (!s.indices.includes(currentFileIdx)) switchFile(s.indices[0]); });
     fileBrowserRow.appendChild(tile);
   }
@@ -741,7 +742,7 @@ addTagConfirm.addEventListener('click', () => {
   addTagCode.value = '';
   addTagVal.value  = '';
   renderTable();
-  toast(`Tag ${fmtTag(key)} added`);
+  toast(T('Tag {tag} added').replace('{tag}', fmtTag(key)));
 });
 
 // ---- Export JSON / CSV ----

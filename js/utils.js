@@ -2,6 +2,8 @@
 // ---- Elements ----
 const $ = (id) => document.getElementById(id);
 const T = (s) => (window.t || String)(s);   // i18n.js loads deferred, so resolve per call
+// The pill keeps its count so i18n.js can redo the text on a language switch.
+const setCountPill = (el, n) => { el.dataset.i18nN = n; el.textContent = T(el.dataset.i18nKey).replace('{n}', n); };
 const body = document.body;
 const dropZone = $('dropZone');
 const fileInput = $('fileInput');

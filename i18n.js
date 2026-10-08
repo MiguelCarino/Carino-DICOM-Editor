@@ -284,6 +284,22 @@ const I18N = {
         'Cancel': 'Cancelar',
         'Confirm': 'Confirmar',
         'Load files': 'Cargar archivos',
+        // Confirms, toasts and count pills
+        'Files: {n}': 'Archivos: {n}',
+        'Images: {n}': 'Imágenes: {n}',
+        'Tag {tag} added': 'Etiqueta {tag} añadida',
+        'Copy every differing value onto {name}? This overwrites its values.': '¿Copiar todos los valores distintos en {name}? Se sobrescriben sus valores.',
+        'Copy every differing value from {name} onto this file? This overwrites its values.': '¿Copiar todos los valores distintos de {name} en este archivo? Se sobrescriben sus valores.',
+        'Copy →': 'Copiar →',
+        'Copy ←': 'Copiar ←',
+        'Cleared all files': 'Se quitaron todos los archivos',
+        'Cleared all images': 'Se quitaron todas las imágenes',
+        '{host} wants to open {n} file(s) in this editor.': '{host} quiere abrir {n} archivo(s) en este editor.',
+        'Nothing from {from} could be read as DICOM': 'Nada de {from} se pudo leer como DICOM',
+        'Loaded {n} image(s) from {from}': 'Cargadas {n} imagen(es) de {from}',
+        'PACS hand-off failed:': 'Falló la entrega desde el PACS:',
+        'No response from Carino DICOM': 'Sin respuesta de Carino DICOM',
+        'PACS deep-link failed:': 'Falló el enlace directo del PACS:',
         'Click anywhere to close': 'Haz clic en cualquier lugar para cerrar',
         // Attributes (titles / placeholders)
         'Search...': 'Buscar...',
@@ -633,6 +649,22 @@ const I18N = {
         'Cancel': 'Cancelar',
         'Confirm': 'Confirmar',
         'Load files': 'Carregar arquivos',
+        // Confirms, toasts and count pills
+        'Files: {n}': 'Arquivos: {n}',
+        'Images: {n}': 'Imagens: {n}',
+        'Tag {tag} added': 'Tag {tag} adicionada',
+        'Copy every differing value onto {name}? This overwrites its values.': 'Copiar todos os valores diferentes para {name}? Os valores dele serão sobrescritos.',
+        'Copy every differing value from {name} onto this file? This overwrites its values.': 'Copiar todos os valores diferentes de {name} para este arquivo? Os valores dele serão sobrescritos.',
+        'Copy →': 'Copiar →',
+        'Copy ←': 'Copiar ←',
+        'Cleared all files': 'Todos os arquivos foram removidos',
+        'Cleared all images': 'Todas as imagens foram removidas',
+        '{host} wants to open {n} file(s) in this editor.': '{host} quer abrir {n} arquivo(s) neste editor.',
+        'Nothing from {from} could be read as DICOM': 'Nada de {from} pôde ser lido como DICOM',
+        'Loaded {n} image(s) from {from}': '{n} imagem(ns) carregada(s) de {from}',
+        'PACS hand-off failed:': 'Falha na entrega do PACS:',
+        'No response from Carino DICOM': 'Sem resposta do Carino DICOM',
+        'PACS deep-link failed:': 'Falha no link direto do PACS:',
         'Click anywhere to close': 'Clique em qualquer lugar para fechar',
         'Search...': 'Buscar...',
         'e.g. Chest X-Ray': 'ex.: Raio-X de tórax',
@@ -981,6 +1013,22 @@ const I18N = {
         'Cancel': 'キャンセル',
         'Confirm': '確認',
         'Load files': 'ファイルを読み込む',
+        // Confirms, toasts and count pills
+        'Files: {n}': 'ファイル: {n}',
+        'Images: {n}': '画像: {n}',
+        'Tag {tag} added': 'タグ {tag} を追加しました',
+        'Copy every differing value onto {name}? This overwrites its values.': '異なる値をすべて {name} にコピーしますか？コピー先の値は上書きされます。',
+        'Copy every differing value from {name} onto this file? This overwrites its values.': '異なる値をすべて {name} からこのファイルにコピーしますか？このファイルの値は上書きされます。',
+        'Copy →': 'コピー →',
+        'Copy ←': 'コピー ←',
+        'Cleared all files': 'すべてのファイルをクリアしました',
+        'Cleared all images': 'すべての画像をクリアしました',
+        '{host} wants to open {n} file(s) in this editor.': '{host} がこのエディターで{n}件のファイルを開こうとしています。',
+        'Nothing from {from} could be read as DICOM': '{from} から DICOM として読み込めるものはありませんでした',
+        'Loaded {n} image(s) from {from}': '{from} から{n}枚の画像を読み込みました',
+        'PACS hand-off failed:': 'PACS からの受け渡しに失敗しました:',
+        'No response from Carino DICOM': 'Carino DICOM から応答がありません',
+        'PACS deep-link failed:': 'PACS ディープリンクに失敗しました:',
         'Click anywhere to close': 'クリックで閉じる',
         'Search...': '検索...',
         'e.g. Chest X-Ray': '例: 胸部X線',
@@ -1329,6 +1377,22 @@ const I18N = {
         'Cancel': 'Отмена',
         'Confirm': 'Подтвердить',
         'Load files': 'Загрузить файлы',
+        // Confirms, toasts and count pills
+        'Files: {n}': 'Файлов: {n}',
+        'Images: {n}': 'Изображений: {n}',
+        'Tag {tag} added': 'Тег {tag} добавлен',
+        'Copy every differing value onto {name}? This overwrites its values.': 'Скопировать все различающиеся значения в {name}? Его значения будут перезаписаны.',
+        'Copy every differing value from {name} onto this file? This overwrites its values.': 'Скопировать все различающиеся значения из {name} в этот файл? Его значения будут перезаписаны.',
+        'Copy →': 'Копировать →',
+        'Copy ←': 'Копировать ←',
+        'Cleared all files': 'Все файлы удалены из списка',
+        'Cleared all images': 'Все изображения удалены из списка',
+        '{host} wants to open {n} file(s) in this editor.': '{host} хочет открыть файлы в этом редакторе ({n}).',
+        'Nothing from {from} could be read as DICOM': 'Ничего из {from} не удалось прочитать как DICOM',
+        'Loaded {n} image(s) from {from}': 'Загружено изображений из {from}: {n}',
+        'PACS hand-off failed:': 'Не удалось принять данные из PACS:',
+        'No response from Carino DICOM': 'Нет ответа от Carino DICOM',
+        'PACS deep-link failed:': 'Не удалось открыть ссылку PACS:',
         'Click anywhere to close': 'Нажмите в любом месте, чтобы закрыть',
         'Search...': 'Поиск...',
         'e.g. Chest X-Ray': 'напр. рентген грудной клетки',
@@ -1419,10 +1483,13 @@ window.t = t; // app code wraps its literals with T() (js/utils.js)
 
 // Static markup: elements carrying data-i18n use their original English text
 // as the key (captured on first pass so locale switches stay reversible).
+// Count pills name their key in data-i18n-key and keep the live count in
+// data-i18n-n (setCountPill), so a switch redoes them instead of zeroing them.
 function applyStaticI18n() {
     document.querySelectorAll('[data-i18n]').forEach((el) => {
         if (!el.dataset.i18nKey) el.dataset.i18nKey = el.textContent.trim();
-        el.textContent = t(el.dataset.i18nKey);
+        const s = t(el.dataset.i18nKey);
+        el.textContent = el.dataset.i18nN === undefined ? s : s.replace('{n}', el.dataset.i18nN);
     });
 }
 

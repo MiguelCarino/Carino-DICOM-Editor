@@ -127,7 +127,7 @@ async function renderDcmToCanvas(dict, canvas, meta = null) {
 }
 
 async function renderExtractorGrid() {
-  extractorCount.textContent = `${extractorFiles.length} file${extractorFiles.length !== 1 ? 's' : ''}`;
+  setCountPill(extractorCount, extractorFiles.length);
   if (extractorFiles.length === 0) {
     extractorGrid.className = '';
     extractorGridWrap.classList.remove('has-files');

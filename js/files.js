@@ -267,7 +267,7 @@ function showLoadedStudy() {
   meta = files[0].meta;
 
   fileNamePill.textContent = files.length === 1 ? files[0].name : `${files[0].name} (+${files.length - 1})`;
-  fileCountPill.textContent = `${files.length} file${files.length > 1 ? 's' : ''}`;
+  setCountPill(fileCountPill, files.length);
   dropZone.classList.add('compact');
 
   renderFileBrowser?.();

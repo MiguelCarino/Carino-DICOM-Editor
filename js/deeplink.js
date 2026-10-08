@@ -19,7 +19,7 @@ window.addEventListener('load', () => {
       clearTimeout(giveUp);
       showLoading?.(false);       // the spinner has nothing to say over a question
       confirmDanger(
-        `${new URL(origin).host} wants to open ${count} file(s) in this editor.`,
+        T('{host} wants to open {n} file(s) in this editor.').replace('{host}', new URL(origin).host).replace('{n}', count),
         () => resolve(true), 'Load files', () => resolve(false));
     }),
     onFiles: async (incoming, info) => {
@@ -31,10 +31,10 @@ window.addEventListener('load', () => {
         const from = info.origin === location.origin ? 'Carino DICOM' : new URL(info.origin).host;
         // Count parsed files, not received ones (files[] may still hold the previous
         // study); handleFiles already reports the failures.
-        if (!n) { toast?.(`Nothing from ${from} could be read as DICOM`); return; }
+        if (!n) { toast?.(T('Nothing from {from} could be read as DICOM').replace('{from}', from)); return; }
         switchTab('editor');
-        toast?.(`Loaded ${n} image(s) from ${from}`);
-      } catch (err) { showLoading?.(false); toast?.('PACS hand-off failed: ' + (err.message || err)); }
+        toast?.(T('Loaded {n} image(s) from {from}').replace('{n}', n).replace('{from}', from));
+      } catch (err) { showLoading?.(false); toast?.(T('PACS hand-off failed:') + ' ' + (err.message || err)); }
     },
   });
   if (armed) {
@@ -95,10 +95,10 @@ window.addEventListener('load', () => {
       const n = await handleFiles(loaded);
       if (!n) throw new Error('no file could be read as DICOM');
       switchTab('editor');
-      toast?.(`Loaded ${n} image(s) from Carino DICOM`);
+      toast?.(T('Loaded {n} image(s) from {from}').replace('{n}', n).replace('{from}', 'Carino DICOM'));
     } catch (err) {
       showLoading?.(false);
-      toast?.('PACS deep-link failed: ' + (err.message || err));
+      toast?.(T('PACS deep-link failed:') + ' ' + (err.message || err));
     }
   })();
 });

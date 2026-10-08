@@ -114,6 +114,17 @@
     ok('the bar counts one tag on each side alone',
        stats.includes(`1 ${T('only here')}`) && stats.includes(`1 ${T('only there')}`), stats);
 
+    // Both copy-all confirms overwrite a whole file, so they must name it in the reader's language.
+    for (const [btn, key, label] of [
+      ['cmpApplyToB', 'Copy every differing value onto {name}? This overwrites its values.', 'Copy →'],
+      ['cmpApplyToA', 'Copy every differing value from {name} onto this file? This overwrites its values.', 'Copy ←']]) {
+      $(btn).click();
+      ok(`#${btn} asks through t(), naming the other file`,
+         $('confirmMsg').textContent === T(key).replace('{name}', 'second.dcm'), $('confirmMsg').textContent);
+      ok(`#${btn}'s OK button is translated too`, $('confirmOk').textContent === T(label), $('confirmOk').textContent);
+      $('confirmCancel').click();
+    }
+
     // ---- the editor's own filters still rule the table ------------------------
     searchQuery = 'Carino Systems';         // a value that exists only in the other file
     renderTable();

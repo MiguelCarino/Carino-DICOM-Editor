@@ -93,6 +93,12 @@ Licensed under **AGPL-3.0-or-later** (see [LICENSE](LICENSE)).
   says UIDs are kept when Retain UIDs is ticked. Both buttons have titles, both
   confirms and toasts are translated, ⚙ reads "⚙ Options · 2" while two options
   are ticked, and the options panel is a grid.
+- In Spanish, Portuguese, Japanese or Russian, some confirms still asked in
+  English, among them both compare **Copy all** overwrites, so the reader approved
+  an irreversible change they might not have read. Every confirm and toast now
+  goes through the translation (including the PACS hand-off and **+ Tag**), the
+  file and image counts read "Files: 3" / "Images: 3" so no locale needs an
+  English plural, and the Create and Extract count pills are translated too.
 
 ## [1.0.0] — 2026-08-30
 

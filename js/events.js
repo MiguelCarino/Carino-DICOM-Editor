@@ -107,12 +107,13 @@ $('cmpDownloadB')?.addEventListener('click', () => {
 });
 $('cmpApplyToB')?.addEventListener('click', () => {
   const other = compareEntry(); if (!other) return;
-  confirmDanger(`Copy every differing value onto ${other.name}? This overwrites its values.`,
+  // A function replacement, so a '$&' in a file name is not read as a pattern.
+  confirmDanger(T('Copy every differing value onto {name}? This overwrites its values.').replace('{name}', () => other.name),
                 () => cmpApplyAll(true), 'Copy →');
 });
 $('cmpApplyToA')?.addEventListener('click', () => {
   const other = compareEntry(); if (!other) return;
-  confirmDanger(`Copy every differing value from ${other.name} onto this file? This overwrites its values.`,
+  confirmDanger(T('Copy every differing value from {name} onto this file? This overwrites its values.').replace('{name}', () => other.name),
                 () => cmpApplyAll(false), 'Copy ←');
 });
 
