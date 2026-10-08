@@ -715,7 +715,7 @@
     #previewCard > * { flex: 0 0 auto; }
     #previewCard > .sr-view { flex: 1 1 auto; min-height: 0; }
     /* align-self stops stretching, so aspect-ratio derives width from height and the box stays square. */
-    #previewCard > .preview-box {
+    #previewCard .preview-box {
       flex: 1 1 auto;
       align-self: center;
       width: auto;
@@ -1323,17 +1323,29 @@
       font: 700 12px var(--mono); cursor: pointer; line-height: 1.4;
     }
     .cmp-copy-btn:hover { border-color: var(--accent); color: var(--accent); }
-    /* ---- Mini preview in sidebar ---- */
+    /* ---- Preview card while comparing: A | B ---- */
+    /* Not comparing, the wrappers are display: contents, so the lone preview keeps its own sizing. */
+    .cmp-previews, .cmp-cell { display: contents; }
+    .cmp-previews:not(.on) #previewBWrap,
+    .cmp-previews:not(.on) .cmp-file-badge { display: none; }
+    /* Comparing, the pictures stay square and the card does not shrink below them: shrunk to fit a short
+       window they were letterboxed strips. The Log gives up its height first, then the sidebar scrolls. */
+    #previewCard:has(> .cmp-previews.on) { flex-shrink: 0; }
+    #previewCard > .cmp-previews.on { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; }
+    .cmp-previews.on .cmp-cell { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+    #previewCard .cmp-previews.on .preview-box,
     .cmp-preview-mini {
-      width: 100%; aspect-ratio: 1;
-      background: #000; border-radius: 4px;
-      overflow: hidden; display: none; margin-top: 8px;
+      flex: none; align-self: stretch;
+      width: 100%; max-width: none; aspect-ratio: 1; min-height: 0;
     }
+    /* The report replaces this file's picture; a name over an empty cell is not worth keeping. */
+    #previewCard > .cmp-previews.on:has(#previewBox.hidden) { display: none; }
+    .cmp-preview-mini { background: #000; border-radius: 8px; overflow: hidden; }
     .cmp-preview-mini canvas { width: 100%; height: 100%; object-fit: contain; display: block; }
     .cmp-file-badge {
+      flex: none;
       font: 600 10px var(--mono); color: var(--text-muted);
       text-overflow: ellipsis; overflow: hidden; white-space: nowrap;
-      margin-top: 6px;
     }
     /* ---- Compare table copy buttons ---- */
     .cmp-actions-cell { display: flex; gap: 3px; justify-content: center; }
@@ -1551,7 +1563,7 @@
       /* Stacked, the page scrolls: the sidebar is a plain stack again and the preview is sized by width. */
       .sidebar, .sidebar-rest { flex: none; overflow: visible; }
       #imgEditCard, #previewCard { flex: none; }
-      #previewCard > .preview-box {
+      #previewCard .preview-box {
         flex: none;
         align-self: auto;
         width: 100%;
@@ -1559,6 +1571,8 @@
         max-width: min(560px, 45vh);
       }
       #previewCard > .sr-view { flex: none; }
+      /* Each compared picture gets the lone preview's cap, the labels staying over their pictures. */
+      #previewCard > .cmp-previews.on { width: 100%; max-width: calc(2 * min(560px, 45vh) + 8px); margin-inline: auto; }
 
       /* One column narrower than the UID box's 200px input: it wraps instead of pushing Apply past the
          clipped right edge. */

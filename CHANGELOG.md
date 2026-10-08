@@ -81,6 +81,10 @@ Licensed under **AGPL-3.0-or-later** (see [LICENSE](LICENSE)).
   unexported work: an edit, undo history, or a working copy that differs from
   its file. Closing or reloading the tab asks too (not in the desktop app,
   where Electron would cancel the close without a prompt).
+- While comparing, the other file's picture was a full-width square under the
+  preview: at 1280x720 it ran over Load Files and squeezed this file's picture
+  to 140px. The two now sit side by side in the Preview card, each under its
+  file name and square; a window too short for both scrolls the sidebar.
 
 ## [1.0.0] — 2026-08-30
 

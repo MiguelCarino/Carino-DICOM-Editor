@@ -412,15 +412,21 @@
             <span data-i18n>Preview</span>
             <button class="sr-toggle-btn hidden" id="srToggleBtn" data-i18n>View Report</button>
           </div>
-          <div class="preview-box visible" id="previewBox">
-            <canvas id="preview"></canvas>
-            <div class="px-hover" id="pxHover">—</div>
+          <!-- Comparing turns this into two named columns (.on); otherwise it lays out as if absent. -->
+          <div class="cmp-previews" id="cmpPreviews">
+            <div class="cmp-cell">
+              <div class="cmp-file-badge" id="previewABadge"></div>
+              <div class="preview-box visible" id="previewBox">
+                <canvas id="preview"></canvas>
+                <div class="px-hover" id="pxHover">—</div>
+              </div>
+            </div>
+            <div class="cmp-cell" id="previewBWrap">
+              <div class="cmp-file-badge" id="previewBBadge"></div>
+              <div class="cmp-preview-mini"><canvas id="previewB"></canvas></div>
+            </div>
           </div>
           <div id="srView" class="sr-view hidden"></div>
-          <div class="cmp-preview-mini" id="previewBWrap">
-            <canvas id="previewB"></canvas>
-          </div>
-          <div class="cmp-file-badge hidden" id="previewBBadge"></div>
           <div class="preview-nav hidden" id="previewNav">
             <button class="preview-nav-btn" id="prevFileBtn" disabled>◀</button>
             <span class="preview-nav-info" id="previewNavInfo"></span>
