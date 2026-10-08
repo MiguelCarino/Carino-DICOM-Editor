@@ -47,6 +47,14 @@ Licensed under **AGPL-3.0-or-later** (see [LICENSE](LICENSE)).
 - Input during page load is held back until every script has run
   (`js/gate.js`, released on `DOMContentLoaded`). Without it, a file dropped
   mid-load reached `handleFiles()` before its helpers existed and was lost.
+- The **UID Pattern** Apply button rewrote standard `1.2.840.10008.*` UIDs too,
+  so one click turned CT Image Storage into `9.9.840.10008…` and broke every
+  file, and a UID outside the shared root kept only its last component, so
+  different UIDs could merge. Standard UIDs are now left out of both the scan
+  and the rewrite, only UIDs under the detected root move, a result over 64
+  characters is refused, and Apply asks first ("Rewrite N UIDs in M files…?").
+  The rewrite clears the undo history: Undo only restored the open file, so it
+  left that one file on the old root and split the study.
 
 ## [1.0.0] — 2026-08-30
 

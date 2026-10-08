@@ -38,7 +38,7 @@ downloadAllBtn.addEventListener('click', () => downloadRange(0, files.length));
 
 applyPrefixBtn.addEventListener('click', () => {
   const p = uidPrefixInput.value.trim();
-  if (p && p !== sharedUIDPrefix) { pushHistory?.(); applyPrefixToAll(p); }
+  if (p && p !== sharedUIDPrefix) applyPrefixToAll(p);
 });
 
 anonymizeBtn.addEventListener('click', () => {
