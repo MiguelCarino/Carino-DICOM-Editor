@@ -154,10 +154,11 @@ Original Attributes, SR content, etc. is cleaned), and additionally:
   redaction tool below.
 
 **Patient's Name** becomes `ANONYMOUS` — the same value in every file, every time. It is
-deliberately not a name: **Randomize** is the action that invents a plausible patient, and
-the name is the first place a reader looks to tell one from the other. It is also the one
-attribute that has to stay constant across a study, since a set of instances sharing a
-PatientID but naming several people is not a study any reader will reassemble.
+deliberately not a name: **Fake patient (test data)** is the action that invents a
+plausible patient, and the name is the first place a reader looks to tell one from the
+other. It is also the one attribute that has to stay constant across a study, since a set
+of instances sharing a PatientID but naming several people is not a study any reader will
+reassemble.
 
 Two more values are written back after the compliant pass regardless of the options below:
 the original **Patient's Sex** and **Patient's Age** `000Y`. Neither identifies anyone, and
@@ -167,10 +168,10 @@ keeps nine real attributes, age included.
 
 ### Optional profiles
 
-The **⚙** button beside Anonymize opens the PS3.15 optional profiles. All five are off by
-default, so the Basic Profile alone remains what happens if you change nothing. Each is
-applied on top of the Basic Profile and recorded as its own `(0012,0064)` item and its own
-`(0012,0063)` value:
+The **⚙ Options** button beside Anonymize opens the PS3.15 optional profiles and shows how
+many are ticked ("⚙ Options · 2"). All five are off by default, so the Basic Profile alone
+remains what happens if you change nothing. Each is applied on top of the Basic Profile and
+recorded as its own `(0012,0064)` item and its own `(0012,0063)` value:
 
 | Option | CID 7050 | Keeps |
 | --- | --- | --- |

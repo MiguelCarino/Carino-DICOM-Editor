@@ -85,6 +85,14 @@ Licensed under **AGPL-3.0-or-later** (see [LICENSE](LICENSE)).
   preview: at 1280x720 it ran over Load Files and squeezed this file's picture
   to 140px. The two now sit side by side in the Preview card, each under its
   file name and square; a window too short for both scrolls the sidebar.
+- **Randomize All** read like de-identification ("replaces identifying tags")
+  but changes only the patient block, the study dates and two IDs; institution,
+  device, physician, private tags and burned-in text stay. It is now **Fake
+  patient (test data)**, and its confirm says it is NOT de-identification and
+  what it keeps, with a **Make fake patient** button. **Anonymize All** is **Anonymize (PS3.15)**, and its confirm
+  says UIDs are kept when Retain UIDs is ticked. Both buttons have titles, both
+  confirms and toasts are translated, ⚙ reads "⚙ Options · 2" while two options
+  are ticked, and the options panel is a grid.
 
 ## [1.0.0] — 2026-08-30
 

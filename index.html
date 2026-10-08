@@ -268,9 +268,9 @@
         </div>
 
         <div class="actions-row">
-          <button id="anonymizeBtn" class="btn" data-i18n>Anonymize All</button>
-          <button id="deidOptsBtn" class="btn" title="PS3.15 de-identification options" aria-label="PS3.15 de-identification options">⚙</button>
-          <button id="randomizeBtn" class="btn" data-i18n>Randomize All</button>
+          <button id="anonymizeBtn" class="btn" title="De-identify every loaded file with the DICOM PS3.15 Basic Profile, plus any options ticked under ⚙" data-i18n>Anonymize (PS3.15)</button>
+          <button id="deidOptsBtn" class="btn" title="PS3.15 de-identification options">⚙ <span data-i18n>Options</span><span id="deidOptsCount"></span></button>
+          <button id="randomizeBtn" class="btn" title="Give every loaded file a made-up patient, for test data. This is not de-identification." data-i18n>Fake patient (test data)</button>
           <button id="undoBtn" class="btn" disabled title="Undo (Ctrl+Z)">↩</button>
           <button id="redoBtn" class="btn" disabled title="Redo (Ctrl+Y)">↪</button>
           <button id="addTagBtn" class="btn" title="Add a new tag to this file" data-i18n>+ Tag</button>

@@ -47,7 +47,11 @@ applyPrefixBtn.addEventListener('click', () => {
 
 anonymizeBtn.addEventListener('click', () => {
   if (!files.length) return;
-  confirmDanger(`Anonymize all ${files.length} loaded file${files.length>1?'s':''}? This overwrites patient identifiers and remaps UIDs.`, () => {
+  // Read the box, not deidOptions: that is only refreshed once the user confirms.
+  const keepUIDs = document.querySelector('#deidOptionsRow [data-opt="rtnUIDsOpt"]')?.checked;
+  confirmDanger(T(keepUIDs
+    ? 'Anonymize all {n} loaded file(s)? This overwrites patient identifiers. UIDs are kept (Retain UIDs).'
+    : 'Anonymize all {n} loaded file(s)? This overwrites patient identifiers and remaps UIDs.').replace('{n}', files.length), () => {
     pushHistory?.();
     if (!window.DEID_PROFILE) log('⚠ deid-profile.js failed to load — only private tags and core identifiers will be removed.');
     readDeidOptions();
@@ -65,21 +69,22 @@ anonymizeBtn.addEventListener('click', () => {
         + (opts.length ? ` + ${opts.join(' + ')}` : ''));
     toast?.(burned.length
       ? T('Burned In Annotation = YES — identity may be burned into the pixels. Use Redact in the Edit tab.')
-      : 'All files anonymized');
+      : T('All files anonymized'));
   }, 'Anonymize');
 });
 
 randomizeBtn.addEventListener('click', () => {
   if (!files.length) return;
-  confirmDanger(`Randomize all ${files.length} loaded file${files.length>1?'s':''}? This replaces identifying tags with random values.`, () => {
+  // randomize() touches only the patient block, dates and two IDs; say what it leaves.
+  confirmDanger(T('Give all {n} loaded file(s) a made-up patient name, IDs, birth date and study dates? This is NOT de-identification: institution, device, physician, private tags and burned-in text are kept.').replace('{n}', files.length), () => {
     pushHistory?.();
     files.forEach(f => randomize(f.dict));
     remapUIDs();
     reseedAllPending();
     syncToUI();
     log('Randomized all files');
-    toast?.('All files randomized');
-  }, 'Randomize');
+    toast?.(T('All files given a fake patient'));
+  }, 'Make fake patient');
 });
 
 

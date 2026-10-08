@@ -1421,13 +1421,13 @@
     .add-tag-val { flex: 1; min-width: 120px; }
     .btn.add-tag-ok { padding: 6px 14px; }
     .btn.add-tag-cancel { padding: 6px 12px; }
-    .deid-options-row { gap: 6px 14px; }
+    .deid-options-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr)); gap: 6px 14px; }
     .deid-options-row label { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--text); cursor: pointer; }
     /* Text-box styling does not apply to the checkbox. */
     .deid-options-row input[type="checkbox"] { padding: 0; background: none; border: none; accent-color: var(--accent); cursor: pointer; }
     #deidOptsBtn.active { background: var(--accent-faint); border-color: var(--accent); color: var(--accent); }
-    .deid-opts-title { font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
-    .deid-opts-note { flex-basis: 100%; font-size: 11px; line-height: 1.5; color: var(--text-muted); }
+    .deid-opts-title { grid-column: 1 / -1; font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+    .deid-opts-note { grid-column: 1 / -1; font-size: 11px; line-height: 1.5; color: var(--text-muted); }
 
     /* ---- Tab panel grid placement ---- */
     /* .app is `grid-template-rows: auto 1fr`; only .main (2nd child) gets the 1fr row automatically.

@@ -702,6 +702,13 @@ deidOptsBtn?.addEventListener('click', () => {
   deidOptionsRow.classList.toggle('hidden');
   deidOptsBtn.classList.toggle('active', !deidOptionsRow.classList.contains('hidden'));
 });
+// The count keeps ticked options visible while the panel is closed.
+function updateDeidOptsCount() {
+  const n = deidOptionsRow.querySelectorAll('input[type="checkbox"][data-opt]:checked').length;
+  $('deidOptsCount').textContent = n ? ` · ${n}` : '';
+}
+deidOptionsRow?.addEventListener('change', updateDeidOptsCount);
+updateDeidOptsCount();   // Firefox restores ticked boxes on reload without a change event
 
 // ---- Add Tag ----
 const addTagBtn     = $('addTagBtn');
