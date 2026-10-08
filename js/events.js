@@ -11,12 +11,16 @@ window.addEventListener('drop', e => {
   if (!r) return;
   if (activeTab === 'create') r.then(res => addCreateImages(res.items.map(it => it.file)));
   else if (activeTab === 'extractor') r.then(res => addExtractorFiles(res.items));
-  else r.then(loadStudy);
+  else r.then(openStudy);
 });
 
 dropZone.addEventListener('click', () => fileInput.click());
 // Reset value so picking the same file twice still fires change.
-fileInput.addEventListener('change', e => { if (e.target.files?.length) handleFiles(e.target.files); e.target.value = ''; });
+fileInput.addEventListener('change', e => {
+  const items = Array.from(e.target.files || []);
+  e.target.value = '';
+  openStudy({ items, fromFolder: false });
+});
 
 // One hidden webkitdirectory input serves all folder buttons, so remember which opened it.
 // (webkitdirectory rather than showDirectoryPicker: it recurses and works in every engine.)
@@ -27,7 +31,7 @@ folderInput.addEventListener('change', e => {
   e.target.value = '';
   if (!items.length) return;
   if (folderTarget === 'extract') addExtractorFiles(items);
-  else loadStudy({ items, fromFolder: true, truncated: false });
+  else openStudy({ items, fromFolder: true, truncated: false });
 });
 // These buttons sit inside drop zones that open the file picker on click; stop propagation.
 $('filesBtn')?.addEventListener('click', e => { e.stopPropagation(); fileInput.click(); });

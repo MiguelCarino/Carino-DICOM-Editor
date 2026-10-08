@@ -347,6 +347,6 @@ window.__selftest = {
   render: renderSelfTest, describe: selftestDescribe, mentions: selftestMentions,
   wanted: selftestWanted, tsName, suites: SELFTEST_SUITES,
   // Indirect so the suite can stub it; location.reload itself cannot be replaced.
-  reload: () => { location.hash = 'selftest'; location.reload(); },
+  reload: () => { unloadConfirmed = true; location.hash = 'selftest'; location.reload(); },
 };
 

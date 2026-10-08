@@ -160,6 +160,9 @@
     // ---- routing ------------------------------------------------------------
     // Bug (ii): the window drop handler only had branches for 'create' and
     // 'editor', so a drop on the Overview background did nothing whatsoever.
+    // Start clean: under #selftest an earlier suite's edits would make every
+    // drop below stop at the open-replaces question.
+    resetStudyState();
     {
       activeTab = 'overview';
       const f = dcm('routed.dcm', 0);
@@ -197,6 +200,96 @@
         await settle(() => false, 60);   // let a second, racing load arrive if there is one
       } finally { window.loadStudy = real; }
       ok('a drop on the card is not loaded twice', loads === 1 && files.length === 4, `${loads} loads, ${files.length} files`);
+    }
+
+    // ---- opening over unsaved work -----------------------------------------
+    // Open means replace, so with edits on screen every way in from the UI asks
+    // first. handleFiles and loadStudy never ask: deep links and suites call them.
+    {
+      activeTab = 'overview';
+      const overlay = document.getElementById('confirmOverlay');
+      const shown = () => overlay.classList.contains('visible');
+      const question = T('Opening these files replaces the study you have open. Any edits you have not exported will be discarded.');
+      const drop = (target, name) => {
+        const ev = new Event('drop', { bubbles: true, cancelable: true });
+        Object.defineProperty(ev, 'dataTransfer', { value: { items: [{ kind: 'file', webkitGetAsEntry: () => null }], files: [dcm(name, 0)] } });
+        target.dispatchEvent(ev);
+      };
+      const keep = files.slice();
+      ok('a study just opened has nothing to lose', !hasUnsavedWork());
+      // A W/L preset writes the working copy and marks nothing dirty.
+      pendingEdits.set(editKey('00281050'), { vr: 'DS', valueString: '17' });
+      ok('a working copy that differs from its file is unsaved work', hasUnsavedWork());
+
+      drop(window, 'second.dcm');
+      ok('a drop over unsaved work asks first', await settle(shown), overlay.className);
+      ok('with the open-replaces question',
+         document.getElementById('confirmMsg').textContent === question,
+         document.getElementById('confirmMsg').textContent.slice(0, 60));
+      ok('and loads nothing before the answer', files.length === keep.length && files[0] === keep[0], String(files.length));
+      document.getElementById('confirmCancel').click();
+      await settle(() => false, 60);
+      ok('cancelling keeps the study and its edit',
+         files[0] === keep[0] && hasUnsavedWork(), files[0]?.name);
+
+      const dt = new DataTransfer();
+      dt.items.add(dcm('picked.dcm', 0));
+      fileInput.files = dt.files;
+      fileInput.dispatchEvent(new Event('change'));
+      ok('the file picker asks too', await settle(shown), overlay.className);
+      document.getElementById('confirmCancel').click();
+      await settle(() => false, 60);
+      ok('and cancelling it keeps the study', files[0] === keep[0], files[0]?.name);
+
+      drop(document.getElementById('ovContent'), 'content.dcm');
+      ok('a drop on the Overview page asks too', await settle(shown), overlay.className);
+      document.getElementById('confirmCancel').click();
+      await settle(() => false, 60);
+      ok('and cancelling it keeps the study', files[0] === keep[0], files[0]?.name);
+
+      const dir = new DataTransfer();
+      dir.items.add(dcm('folder.dcm', 0));
+      folderTarget = 'study';
+      folderInput.files = dir.files;
+      folderInput.dispatchEvent(new Event('change'));
+      ok('the folder picker asks too', await settle(shown), overlay.className);
+      document.getElementById('confirmCancel').click();
+      await settle(() => false, 60);
+      ok('and cancelling it keeps the study', files[0] === keep[0], files[0]?.name);
+
+      const real = window.loadStudy;
+      let loads = 0;
+      window.loadStudy = (res) => { loads++; return real(res); };
+      try {
+        drop(document.getElementById('ovDrop'), 'card.dcm');
+        ok('a drop on the card asks once', await settle(shown), overlay.className);
+        document.getElementById('confirmOk').click();
+        await settle(() => files[0]?.name === 'card.dcm');
+        await settle(() => false, 60);
+      } finally { window.loadStudy = real; }
+      ok('answering yes opens the dropped file, once',
+         loads === 1 && files.length === 1 && files[0].name === 'card.dcm', `${loads} loads, ${files[0]?.name}`);
+      ok('and the new study starts with nothing to lose', !hasUnsavedWork());
+
+      // Synthetic, so it only shows whether the handler holds the page.
+      const unload = () => {
+        const ev = new Event('beforeunload', { cancelable: true });
+        window.dispatchEvent(ev);
+        return ev.defaultPrevented;
+      };
+      const wasSelftest = window.SELFTEST;
+      window.SELFTEST = false;
+      try {
+        ok('leaving a clean study is not held up', !unload());
+        datasetDirty = true;
+        ok('leaving with unsaved work asks the browser to confirm', unload());
+        unloadConfirmed = true;
+        ok('unless the user already agreed to the reload', !unload());
+      } finally { unloadConfirmed = false; window.SELFTEST = wasSelftest; }
+
+      await handleFiles([dcm('direct.dcm', 0)]);
+      ok('handleFiles itself never asks',
+         !shown() && files[0]?.name === 'direct.dcm', `visible=${shown()} ${files[0]?.name}`);
     }
 
     // ---- the large-study gate ----------------------------------------------

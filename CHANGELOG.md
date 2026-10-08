@@ -75,6 +75,12 @@ Licensed under **AGPL-3.0-or-later** (see [LICENSE](LICENSE)).
   banner and now also to a toast on whichever tab is open; an image is named as
   one and pointed at Create. `handleFiles()` returns how many files it loaded,
   which the PACS hand-off now counts instead of `files.length`.
+- Opening a second file (to compare it, say) silently threw away the first
+  one's edits. Open still means replace, but every way in from the UI (Open,
+  the file and folder pickers, a drop anywhere) now asks first when there is
+  unexported work: an edit, undo history, or a working copy that differs from
+  its file. Closing or reloading the tab asks too (not in the desktop app,
+  where Electron would cancel the close without a prompt).
 
 ## [1.0.0] — 2026-08-30
 

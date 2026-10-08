@@ -147,6 +147,36 @@ async function loadStudy(res) {
   }
 }
 
+// Open means replace, so ask first when that would lose work. W/L presets and copy-to-B
+// write the working copy without marking the dataset dirty, hence the comparison.
+function hasUnsavedWork() {
+  if (datasetDirty || editHistory.length) return true;
+  return files.some(f => {
+    if (!f.pending) return false;
+    const seed = seedPending(f.dict);
+    for (const [k, v] of f.pending) if (seed.get(k)?.valueString !== v.valueString) return true;
+    return false;
+  });
+}
+// Every UI path that opens a study comes through here. handleFiles and loadStudy never
+// ask: deep links and the test suites call them directly.
+function openStudy(res) {
+  if (!res?.items?.length) return Promise.resolve();
+  if (!hasUnsavedWork()) return loadStudy(res);
+  return new Promise(resolve => confirmDanger(
+    T('Opening these files replaces the study you have open. Any edits you have not exported will be discarded.'),
+    () => resolve(loadStudy(res)), 'Discard and open', () => resolve()));
+}
+// Set by a reload the user has already confirmed (the self-test link). A finished
+// self-test (window.SELFTEST) holds only its own files.
+let unloadConfirmed = false;
+// Skipped under Electron, which cancels the close without showing any prompt.
+window.addEventListener('beforeunload', e => {
+  if (window.carinoDesktop || window.SELFTEST || unloadConfirmed || !hasUnsavedWork()) return;
+  e.preventDefault();
+  e.returnValue = '';
+});
+
 // ---- File handling ----
 // Wipes the loaded study, pending edits, undo history and the per-study UI.
 function resetStudyState() {

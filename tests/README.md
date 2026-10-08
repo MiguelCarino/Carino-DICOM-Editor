@@ -59,7 +59,7 @@ byte-for-byte deterministic (fixed UIDs, no `Math.random`).
 | --- | --- |
 | `boot` | Library scripts (`vendor/dcmjs.min.js`, `deid-profile.js`, `dicom-dictionary.js`) sit below the page markup (not in `<head>`), without `defer`, before `js/dictionary.js`. |
 | `loading` | `handleFiles` read-ahead: bounded by count and bytes, order and per-file failure handling unchanged. A load where nothing parses keeps the open study, edits and undo history, toasts on any tab and points images at Create; the return value is the parsed count. |
-| `folder` | Folder/study drops: `DICM` sniff, entry-tree walk, `DataTransfer` snapshot, drop routing, `loadStudy` filtering (DICOMDIR, junk, large-folder prompt). |
+| `folder` | Folder/study drops: `DICM` sniff, entry-tree walk, `DataTransfer` snapshot, drop routing, `loadStudy` filtering (DICOMDIR, junk, large-folder prompt). Opening over unsaved work: drops and the file picker ask first, the card drop asks once, `beforeunload` holds only a dirty page, `handleFiles` never asks. |
 | `pixels` | `decodeDicomPixels()` alone: greyscale via `rawFloats` min/max, colour pixel for pixel. |
 | `viewer` | Rendered canvases (Overview `renderOverview`, editor `drawPreview`) against the reference and each other. |
 | `render` | Tag-table rebuilds: debounced search, synchronous `renderTable`, UID-prefix scan only when data changes; UID Pattern Apply asks first, never rewrites standard `1.2.840.10008.*` UIDs and leaves no undo step that would split the study. |
