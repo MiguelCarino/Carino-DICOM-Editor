@@ -6,6 +6,10 @@ Licensed under **AGPL-3.0-or-later** (see [LICENSE](LICENSE)).
 ## [Unreleased]
 
 ### Changed
+- **Create → Modality offers every code in the standard**: all 79 Defined Terms of
+  Modality (0008,0060) from PS3.3 C.7.3.1.1.1, written code first (`US - Ultrasound`).
+  `SC` is gone: it is not a Modality value, and a Secondary Capture object uses `OT`,
+  which stays the default.
 - The **Extract** tab now starts from the open study instead of an empty list, so
   **⤓ Extract image** on the Overview no longer lands on nothing. It reads the study
   fresh on every visit, through the same merge the download uses, so a redacted banner
