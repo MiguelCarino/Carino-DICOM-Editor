@@ -21,6 +21,11 @@ be called `DICOM-editor`; GitHub redirects the old name.
   match, and the file is marked `DERIVED` with a new SOP Instance UID.
 - **De-identify**: **Anonymize** applies the PS3.15 Basic Confidentiality Profile.
   **Fake patient** fills in made-up demographics for test data.
+- **Swap patients**: with exactly two studies loaded, each study takes the other's patient
+  (all of group 0010) and keeps its own images, dates, times and description. Accession
+  Number moves only if you tick it. New UIDs are on by default, so a PACS that hides old
+  studies instead of deleting them does not merge the re-upload back into them. A preview
+  shows both sides first and warns when both already carry the same Patient ID.
 - **Compare, Extract, Create**: diff two files, export frames as PNG/JPEG, or build a new
   DICOM file from scratch.
 
