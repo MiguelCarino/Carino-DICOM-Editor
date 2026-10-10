@@ -5,6 +5,17 @@ Licensed under **AGPL-3.0-or-later** (see [LICENSE](LICENSE)).
 
 ## [Unreleased]
 
+### Added
+- **⇄ Swap patients** (Edit tab), for images filed under the wrong patient. With exactly
+  two studies loaded, every file of each study takes the other study's whole Patient
+  Module (group 0010); a tag only one patient had leaves with that patient. Study,
+  series, equipment and pixel data stay put. Accession Number is opt-in. New UIDs are on
+  by default (through `remapUIDs()`), because a PACS that hides rather than deletes would
+  otherwise merge the re-upload into the old study. The dialog previews both sides and
+  warns, without blocking, when both studies already share a Patient ID or one study mixes
+  IDs. Edits typed into the table are folded in first instead of being dropped. Undo
+  history is cleared, as for the UID prefix rewrite. Covered by `tests/suites/swap.js`.
+
 ### Changed
 - **Create → Modality offers every code in the standard**: all 79 Defined Terms of
   Modality (0008,0060) from PS3.3 C.7.3.1.1.1, written code first (`US - Ultrasound`).
