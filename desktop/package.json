@@ -64,10 +64,8 @@
       "synopsis": "DICOM editor — open, inspect, edit and de-identify DICOM files locally",
       "icon": "build/icons",
       "executableName": "carino-dicom-editor",
+      "artifactName": "${productName}-${version}-${arch}.${ext}",
       "desktop": { "Name": "Carino DICOM Editor", "StartupWMClass": "Carino DICOM Editor" }
-    },
-    "appImage": {
-      "artifactName": "${productName}-${version}-${arch}.${ext}"
     }
   }
 }
