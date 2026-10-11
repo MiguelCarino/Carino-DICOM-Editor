@@ -5,6 +5,8 @@ Licensed under **AGPL-3.0-or-later** (see [LICENSE](LICENSE)).
 
 ## [Unreleased]
 
+## [1.0.1] — 2026-10-11
+
 ### Added
 - **⇄ Swap patients** (Edit tab), for images filed under the wrong patient. With exactly
   two studies loaded, every file of each study takes the other study's whole Patient

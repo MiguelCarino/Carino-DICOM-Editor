@@ -1,7 +1,7 @@
 {
   "name": "carino-dicom-editor-desktop",
   "productName": "Carino DICOM Editor",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Desktop window for the Carino DICOM Editor — open, inspect, edit and de-identify DICOM files on your own machine",
   "author": { "name": "Miguel Carino", "email": "hello@carino.systems" },
   "homepage": "https://github.com/MiguelCarino/Carino-DICOM-Editor",
