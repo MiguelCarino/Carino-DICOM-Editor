@@ -160,9 +160,11 @@ jobs:
           exit $missing
 
       # The icon files existing is not the icon showing. A Linux dock pairs the
-      # window with its launcher by name (StartupWMClass on X11, the app ID from
-      # desktopName on Wayland); when they disagree it draws a generic icon,
-      # with every file in place. So this checks the names as well as the files.
+      # window with its launcher by name: on X11 the window's class is the
+      # top-level productName, which StartupWMClass must repeat exactly; on
+      # Wayland the app ID comes from desktopName. When they disagree the dock
+      # draws a generic icon with every file in place, so this checks the names
+      # as well as the files.
       - name: Verify the icon ships in every package
         shell: bash
         run: |
@@ -172,11 +174,12 @@ jobs:
           bad() { echo "NO ICON: $*"; fail=1; }
           case "$RUNNER_OS" in
             Linux)
+              wmclass=$(node -p 'require("../package.json").productName')
               for deb in *.deb; do
                 dpkg-deb -c "$deb" | grep -F 'hicolor/256x256/apps/carino-dicom-editor.png' >/dev/null || bad "$deb: no hicolor icon"
                 entry=$(dpkg-deb --fsys-tarfile "$deb" | tar -xO ./usr/share/applications/carino-dicom-editor.desktop)
                 grep -qx 'Icon=carino-dicom-editor' <<<"$entry" || bad "$deb: desktop entry has no Icon"
-                grep -qx 'StartupWMClass=carino-dicom-editor' <<<"$entry" || bad "$deb: StartupWMClass does not match the window"
+                grep -qxF "StartupWMClass=$wmclass" <<<"$entry" || bad "$deb: StartupWMClass does not match the window"
               done
               for rpm in *.rpm; do
                 rpm -qlp "$rpm" 2>/dev/null | grep -F 'hicolor/256x256/apps/carino-dicom-editor.png' >/dev/null || bad "$rpm: no hicolor icon"
