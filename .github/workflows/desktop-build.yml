@@ -159,6 +159,60 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
           exit $missing
 
+      # The icon files existing is not the icon showing. A Linux dock pairs the
+      # window with its launcher by name (StartupWMClass on X11, the app ID from
+      # desktopName on Wayland); when they disagree it draws a generic icon,
+      # with every file in place. So this checks the names as well as the files.
+      - name: Verify the icon ships in every package
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd desktop/dist
+          fail=0
+          bad() { echo "NO ICON: $*"; fail=1; }
+          case "$RUNNER_OS" in
+            Linux)
+              for deb in *.deb; do
+                dpkg-deb -c "$deb" | grep -F 'hicolor/256x256/apps/carino-dicom-editor.png' >/dev/null || bad "$deb: no hicolor icon"
+                entry=$(dpkg-deb --fsys-tarfile "$deb" | tar -xO ./usr/share/applications/carino-dicom-editor.desktop)
+                grep -qx 'Icon=carino-dicom-editor' <<<"$entry" || bad "$deb: desktop entry has no Icon"
+                grep -qx 'StartupWMClass=carino-dicom-editor' <<<"$entry" || bad "$deb: StartupWMClass does not match the window"
+              done
+              for rpm in *.rpm; do
+                rpm -qlp "$rpm" 2>/dev/null | grep -F 'hicolor/256x256/apps/carino-dicom-editor.png' >/dev/null || bad "$rpm: no hicolor icon"
+              done
+              for asar in */resources/app.asar; do
+                name=$(node -e 'const a=require(process.argv[2]);console.log(JSON.parse(a.extractFile(process.argv[1],"package.json")).desktopName||"")' \
+                  "$asar" "$PWD/../node_modules/@electron/asar")
+                [ "$name" = "carino-dicom-editor.desktop" ] || bad "$asar: desktopName is '$name'"
+              done
+              for img in *x86_64.AppImage; do
+                chmod +x "$img"
+                (cd "$(mktemp -d)" && "$OLDPWD/$img" --appimage-extract >/dev/null && [ -s squashfs-root/.DirIcon ]) || bad "$img: no .DirIcon"
+              done
+              ;;
+            macOS)
+              for app in mac*/*.app; do
+                icon=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIconFile' "$app/Contents/Info.plist")
+                [ -s "$app/Contents/Resources/${icon%.icns}.icns" ] || bad "$app: CFBundleIconFile '$icon' is not in Resources"
+              done
+              ;;
+            Windows)
+              # Electron's stock icon has no gold in it, ours is mostly gold:
+              # finding gold pixels in the exe's icon proves ours was embedded.
+              for exe in win*-unpacked/Carino-DICOM-Editor.exe; do
+                powershell -NoProfile -Command "
+                  Add-Type -AssemblyName System.Drawing
+                  \$b = [System.Drawing.Icon]::ExtractAssociatedIcon('$exe').ToBitmap(); \$n = 0
+                  for (\$x = 0; \$x -lt \$b.Width; \$x++) { for (\$y = 0; \$y -lt \$b.Height; \$y++) {
+                    \$p = \$b.GetPixel(\$x, \$y); if (\$p.A -gt 200 -and \$p.R -gt 180 -and \$p.G -gt 130 -and \$p.B -lt 90) { \$n++ } } }
+                  if (\$n -lt 20) { exit 1 }" || bad "$exe: the exe carries Electron's icon, not ours"
+              done
+              ;;
+          esac
+          [ $fail -eq 0 ] && echo "icon present in every package"
+          exit $fail
+
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:

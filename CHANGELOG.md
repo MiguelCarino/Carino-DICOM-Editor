@@ -57,6 +57,12 @@ Licensed under **AGPL-3.0-or-later** (see [LICENSE](LICENSE)).
   `index.html` are classes in `app.css`. No visible change.
 
 ### Fixed
+- **Desktop app icon on Linux docks and the Windows taskbar.** The window called itself
+  `Carino DICOM Editor` while the launcher expected `Carino-DICOM-Editor`, so GNOME/KDE
+  docks showed a generic icon; `desktopName` and `StartupWMClass` now both say
+  `carino-dicom-editor` (X11 and Wayland). On Windows the window now claims the
+  installer's AppUserModelID, so it groups with its pinned shortcut. CI fails any build
+  whose packages lack the icon or whose names disagree.
 - Exporting an edited **Explicit VR Big Endian** file wrote its word-sized binary
   values (OW pixels and LUTs, OL, OF, OD) unswapped under a little-endian label,
   so 4095 came back as 65295. They are now swapped on a copy at export.

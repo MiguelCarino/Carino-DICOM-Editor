@@ -7,6 +7,7 @@
   "homepage": "https://github.com/MiguelCarino/Carino-DICOM-Editor",
   "license": "AGPL-3.0-or-later",
   "main": "main.js",
+  "desktopName": "carino-dicom-editor.desktop",
   "scripts": {
     "start": "electron .",
     "dist": "electron-builder"
@@ -63,7 +64,7 @@
       "synopsis": "DICOM editor — open, inspect, edit and de-identify DICOM files locally",
       "icon": "build/icons",
       "executableName": "carino-dicom-editor",
-      "desktop": { "Name": "Carino DICOM Editor" }
+      "desktop": { "Name": "Carino DICOM Editor", "StartupWMClass": "carino-dicom-editor" }
     },
     "appImage": {
       "artifactName": "${productName}-${version}-${arch}.${ext}"
