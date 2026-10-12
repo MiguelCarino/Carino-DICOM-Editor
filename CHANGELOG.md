@@ -5,6 +5,14 @@ Licensed under **AGPL-3.0-or-later** (see [LICENSE](LICENSE)).
 
 ## [Unreleased]
 
+### Fixed
+- **AppImage dock icon on GNOME Wayland.** GNOME on Wayland takes the dock icon only
+  from a `.desktop` file named after the window's app ID, and an AppImage run from
+  Downloads installed none. On each start the AppImage now writes
+  `~/.local/share/applications/carino-dicom-editor.desktop` and its icon (marked
+  `X-Carino-AppImage=true`; `TryExec` hides it once the AppImage is gone). It never
+  touches an entry of your own, and removes its own once the .deb/.rpm is installed.
+
 ## [1.0.2] — 2026-10-11
 
 The first published release; neither 1.0.0 nor 1.0.1 published one. The 1.0.1

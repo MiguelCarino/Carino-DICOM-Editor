@@ -94,6 +94,14 @@ macOS, Windows and Linux are on the
 - **Update checks are off unless you turn them on.** If enabled, the app checks GitHub
   for a new release once a day and shows a notice. It never downloads anything itself.
   Turn it on or off under **Help**.
+- **The Linux AppImage adds itself to the app menu.** Each time it starts it writes
+  `~/.local/share/applications/carino-dicom-editor.desktop` and a 512px icon under
+  `~/.local/share/icons/hicolor/` (or `$XDG_DATA_HOME`). Without that file GNOME on
+  Wayland shows a generic dock icon. The entry follows the AppImage if you move it,
+  disappears from the menu once the AppImage is deleted, is removed again on the next start
+  once the `.deb`/`.rpm` is installed, and never replaces a `.desktop` file of your own. To remove it, delete
+  `~/.local/share/applications/carino-dicom-editor.desktop` and
+  `~/.local/share/icons/hicolor/512x512/apps/carino-dicom-editor.png`.
 - The `#load=` handoff from Carino DICOM does not work in the desktop app because of CORS.
   Use the web version or the editor bundled with Carino DICOM instead.
 

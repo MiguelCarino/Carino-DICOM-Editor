@@ -487,6 +487,84 @@ function buildAppMenu() {
   ]);
 }
 
+// ---- AppImage desktop entry --------------------------------------------
+// GNOME on Wayland takes a window's dock icon only from the .desktop file named
+// after its app_id (desktopName in package.json), never from the window itself.
+// The .deb and .rpm install that file; an AppImage run from ~/Downloads installs
+// nothing, so its dock icon was the generic one. It is rewritten on every launch
+// because the AppImage may have moved or been updated, and TryExec makes the
+// entry vanish by itself once the AppImage is deleted.
+const DESKTOP_ID = "carino-dicom-editor";
+const DESKTOP_MARKER = /^X-Carino-AppImage=true$/m;
+
+async function integrateAppImage() {
+  if (process.platform !== "linux") return;
+  const appImage = process.env.APPIMAGE;
+  try {
+    const xdg = process.env.XDG_DATA_HOME;
+    const dataHome = xdg && path.isAbsolute(xdg) ? xdg : path.join(app.getPath("home"), ".local", "share");
+    const entryFile = path.join(dataHome, "applications", DESKTOP_ID + ".desktop");
+    const iconFile = path.join(dataHome, "icons", "hicolor", "512x512", "apps", DESKTOP_ID + ".png");
+
+    let current = null;
+    try { current = await fs.promises.readFile(entryFile, "utf8"); } catch (e) { /* none yet */ }
+    if (current !== null && !DESKTOP_MARKER.test(current)) return;   // the user's own entry
+
+    // A packaged install owns this name, and ours in ~/.local would shadow it,
+    // so the menu would keep launching the old AppImage. Checked on every Linux
+    // start, AppImage or not, so installing the .deb/.rpm later cleans up.
+    const packaged = ["/usr/share/applications", "/usr/local/share/applications"]
+      .some((dir) => fs.existsSync(path.join(dir, DESKTOP_ID + ".desktop")));
+    if (packaged) {
+      if (current !== null) {
+        await fs.promises.rm(entryFile, { force: true });
+        await fs.promises.rm(iconFile, { force: true });
+      }
+      return;
+    }
+    // GLib does not undo %% when it checks that Exec's program exists, so GNOME
+    // would drop an entry for a path with a % in it; better to write none.
+    if (!appImage || /[\r\n%]/.test(appImage)) return;
+
+    // Desktop Entry escaping, in two layers: inside a quoted Exec argument
+    // " ` $ and \ take a backslash, then every string value doubles \ again
+    // (a % never gets here, see above). Icon is an absolute path so no
+    // icon-theme cache has to be refreshed to find it.
+    const esc = (s) => s.replace(/\\/g, "\\\\");
+    const exec = esc('"' + appImage.replace(/["`$\\]/g, "\\$&") + '"');
+    const entry = [
+      "[Desktop Entry]",
+      "Type=Application",
+      "Name=Carino DICOM Editor",
+      "Comment=Open, inspect, edit and de-identify DICOM files locally",
+      "Exec=" + exec + " %U",
+      "TryExec=" + esc(appImage),
+      "Icon=" + esc(iconFile),
+      "StartupWMClass=Carino DICOM Editor",
+      "Terminal=false",
+      "Categories=Graphics;",
+      "X-Carino-AppImage=true",
+      "",
+    ].join("\n");
+
+    // Read through Electron's asar-aware fs: the icon lives inside app.asar.
+    const icon = await fs.promises.readFile(path.join(ASSETS, "icon.png"));
+    let oldIcon = null;
+    try { oldIcon = await fs.promises.readFile(iconFile); } catch (e) { /* none yet */ }
+    if (!oldIcon || !oldIcon.equals(icon)) {
+      await fs.promises.mkdir(path.dirname(iconFile), { recursive: true });
+      await fs.promises.writeFile(iconFile, icon);
+    }
+    if (current !== entry) {
+      await fs.promises.mkdir(path.dirname(entryFile), { recursive: true });
+      await fs.promises.writeFile(entryFile, entry);
+    }
+  } catch (e) {
+    // Cosmetic only: the dock icon must never be the reason the app won't start.
+    console.warn("AppImage desktop entry not written: " + e.message);
+  }
+}
+
 // ---- lifecycle ---------------------------------------------------------
 // Windows groups a taskbar button by AppUserModelID. The installer's shortcut
 // carries build.appId, so the window must claim the same one, or a pinned
@@ -509,6 +587,7 @@ if (!app.requestSingleInstanceLock()) {
     // shell text (the menu, the opt-in question) runs after this point.
     initI18n(app);
     loadUpdateState();
+    integrateAppImage();   // not awaited: it must never hold up the window
 
     protocol.handle(SCHEME, serveFromBundle);
 
