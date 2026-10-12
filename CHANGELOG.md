@@ -7,9 +7,10 @@ Licensed under **AGPL-3.0-or-later** (see [LICENSE](LICENSE)).
 
 ## [1.0.2] — 2026-10-11
 
-The first published release since 1.0.0. The `v1.0.1` tag exists but its build
-published nothing: the Linux .deb and .rpm kept electron-builder's default names, which
-the release manifest refused. Linux now names every package `${productName}-${version}-${arch}`.
+The first published release; neither 1.0.0 nor 1.0.1 published one. The 1.0.1
+build failed because the Linux .deb and .rpm kept electron-builder's default names,
+which the release manifest refused. Linux now names every package
+`${productName}-${version}-${arch}`.
 
 ### Added
 - **⇄ Swap patients** (Edit tab), for images filed under the wrong patient. With exactly
