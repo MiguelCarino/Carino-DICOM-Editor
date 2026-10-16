@@ -7,7 +7,7 @@
 // Ordered parse -> decode -> display -> edit -> export, not alphabetically.
 const SELFTEST_SUITES = ['boot', 'loading', 'folder', 'pixels', 'viewer', 'render', 'phone',
                          'sequences', 'series', 'edits', 'imgedit', 'compare', 'deid', 'swap',
-                         'redact', 'samples', 'zip'];
+                         'redact', 'samples', 'eyephoto', 'zip'];
 
 // PS3.6 Annex A names, kept in English so bug reports stay searchable.
 const TS_NAMES = {

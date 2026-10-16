@@ -5,6 +5,30 @@ Licensed under **AGPL-3.0-or-later** (see [LICENSE](LICENSE)).
 
 ## [Unreleased]
 
+### Added
+- **Create → Eye photo**, for fundus, slit-lamp and external eye pictures that a camera saved
+  as JPEG or PNG. Writes Ophthalmic Photography 8 Bit Image Storage
+  (`1.2.840.10008.5.1.4.1.1.77.1.5.1`, Modality `OP`, PS3.3 A.41) with the Ophthalmic Photography
+  Image, Ocular Region Imaged, Acquisition Parameters, Photographic Parameters, Synchronization
+  and Multi-frame modules. Each thumbnail gets a Right / Left / Both picker for Image Laterality
+  `(0020,0062)`, filled from the file name (OD/OS/OU, OI, OE, right/left, derecho/izquierdo) and
+  required before anything is written. A baseline JPEG goes in byte for byte as JPEG Baseline
+  with `YBR_FULL_422`, Lossy Image Compression `01`, its ratio and `ISO_10918_1`; other JPEGs
+  (progressive, RGB-coded, EXIF-rotated) and PNG are stored decoded as RGB. Device and region are
+  CID 4202 / CID 4209 codes. A fundus camera needs its field of view, from which the nominal
+  Pixel Spacing is written. EXIF capture time becomes Acquisition DateTime. No optic-disc
+  laterality guess: it could not be checked against real photos.
+- **Create can be opened with an order** from a worklist: `#create=eye&patient_id=…` or a
+  `*.carino-create.json` file over the Carino Bridge, with the keys Carino DICOM's orders use
+  (format in `js/create.js` and the README). `study_uid` makes the files join that study, and
+  `procedure_id` / `sps_id` fill the Request Attributes Sequence. The hash is cleared once read.
+- Create writes Accession Number and Referring Physician's Name (both Type 2), with a new
+  Accession Number field.
+- The validator knows Ophthalmic Photography 8 Bit: its Type 1/2 attributes, and Image
+  Laterality R, L or B only (a missing or `U` laterality is an error). A sequence with items now
+  counts as having a value.
+- Covered by `tests/suites/eyephoto.js`, also in `#selftest`.
+
 ### Fixed
 - **AppImage dock icon on GNOME Wayland.** GNOME on Wayland takes the dock icon only
   from a `.desktop` file named after the window's app ID, and an AppImage run from

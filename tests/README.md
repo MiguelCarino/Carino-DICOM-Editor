@@ -71,6 +71,7 @@ byte-for-byte deterministic (fixed UIDs, no `Math.random`).
 | `compare` | Side-by-side comparison as a second column of the editor table. |
 | `deid` | PS3.15 optional profiles via the real Anonymize button; `(0012,0064)` codes and multi-valued `(0012,0063)`. |
 | `swap` | Swap patients via the real button and dialog: group 0010 moves whole, acquisition and pixels stay, Accession opt-in, new UIDs keep each study whole, warnings, exported bytes read back. |
+| `eyephoto` | Create → Eye photo: OP 8 Bit SOP class and modules, laterality picker and filename detection, no file until every photo has an eye, camera JPEG encapsulated byte for byte (read back independently of dcmjs), PNG/rotated JPEG stored as RGB, the app's parser, decoder and validator on the result, the `#create` and bridge prefill. |
 | `redact` | Burned-in pixel redaction per photometric/codec, in memory and in the exported file; screen-to-image mapping; codec refusals. |
 | `samples` | Demo samples decode to their references, are deterministic, and pass the Conformance card cleanly. |
 | `zip` | Download All / Extract produce one ZIP holding every file, checked by an independent reader; 32-bit limits refused. |

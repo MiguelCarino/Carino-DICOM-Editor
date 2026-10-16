@@ -29,6 +29,50 @@ be called `DICOM-editor`; GitHub redirects the old name.
 - **Compare, Extract, Create**: diff two files, export frames as PNG/JPEG, or build a new
   DICOM file from scratch.
 
+## Eye photos
+
+Many fundus cameras and slit lamps in small clinics save only JPEG, and free converters turn
+those into DICOM with no eye and the wrong modality. **Create → File type → Eye photo** writes
+**Ophthalmic Photography 8 Bit Image Storage** (`1.2.840.10008.5.1.4.1.1.77.1.5.1`, Modality `OP`)
+instead:
+
+- **Every photo needs an eye.** Each thumbnail has a Right / Left / Both picker, filled in when
+  the file name says OD, OS, OU, OI, OE, right, left, derecho or izquierdo. Nothing is written
+  until every photo has one. It goes into Image Laterality `(0020,0062)`.
+- **The camera's JPEG is kept byte for byte** as JPEG Baseline, `YBR_FULL_422`, marked lossy
+  with its compression ratio. A JPEG that cannot be filed that way (progressive, RGB-coded, or
+  turned only by its EXIF tag, which DICOM viewers ignore) is stored decoded, still marked lossy.
+  PNG is stored as uncompressed RGB.
+- **The ophthalmic modules are filled in**: the camera type and the part of the eye as coded
+  values (fundus camera, slit lamp or external camera), the capture time from EXIF when the
+  photo has one, and the other mandatory attributes present, empty when unknown.
+- **Fundus photos need the camera's field of view** (on the camera or in its manual, often 45°
+  or 50°). The standard requires a pixel size for them, and this one is nominal: about 0.29 mm
+  of retina per degree.
+- **Burned-in text** is assumed (camera photos often print the name or date) unless you untick it.
+
+The eye comes from you or from the file name. A guess from the picture itself (which side the
+optic disc is on) is not offered, because it could not be tested on real photos.
+
+### Opening Create from a worklist
+
+A worklist (Carino DICOM) can open Create with an order already filled in, so the photos join
+the ordered study. The keys are the ones Carino DICOM's orders use:
+
+```
+https://dcm.carino.systems/#create=eye&patient_name=DOE%5EJANE&patient_id=123
+    &patient_birthdate=19800102&patient_sex=F&accession=A1&study_desc=Fundus%20photos
+    &procedure_id=RP1&sps_id=SPS1&study_uid=1.2.3.4&referring=HOUSE%5EGREG
+```
+
+`#create` alone opens Create; `=eye` also picks Eye photo. Values are URL-encoded. The hash is
+removed from the address bar as soon as it is read. Over the [Carino Bridge](carino-bridge.js)
+the same keys travel in a file named `*.carino-create.json`,
+`{ "carinoCreate": 1, "kind": "eye", "patient_id": "123", … }`, optionally with the photos beside
+it, and nothing reaches the URL. A value too long for its DICOM field, a malformed UID, date or
+sex is dropped, not cut short. With `study_uid` every file joins that study; `procedure_id` and
+`sps_id` go into the Request Attributes Sequence.
+
 ![Edit tab: the tag table with category filters, plus the Image edits card and the preview](docs/screenshots/edit.webp)
 
 ## Trying it without a file

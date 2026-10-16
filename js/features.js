@@ -804,49 +804,23 @@ document.addEventListener('keydown', e => {
 // ---- Create DICOM from images ----
 createDicomBtn.addEventListener('click', async () => {
   if (!createImages.length) { alert(T('No images loaded.')); return; }
-
-  const studyDate = ($('cdStudyDate').value || '').replace(/-/g, '') || nowDA();
-  const commonMeta = {
-    patientName:      $('cdPatientName').value.trim() || 'UNKNOWN',
-    patientID:        $('cdPatientID').value.trim(),
-    patientDOB:       ($('cdPatientDOB').value || '').replace(/-/g, ''),
-    patientSex:       $('cdPatientSex').value,
-    studyUID:         newUID(),
-    studyDate,
-    studyTime:        nowTM(),
-    studyDescription: $('cdStudyDesc').value.trim(),
-    modality:         $('cdModality').value || 'OT',
-  };
-
-  // Each series gets its own Series Instance UID.
-  const seriesMetaMap = {};
-  for (const s of createSeries) {
-    seriesMetaMap[s.id] = { ...commonMeta, seriesUID: newUID(), seriesDescription: s.description };
-  }
+  // Said beside the button as well as in a toast: the toast is gone before the photos are fixed.
+  const blocked = createBlockReason();
+  showCreateBlock(blocked);
+  if (blocked) { toast(blocked, 4000); return; }
 
   createDicomBtn.disabled = true;
   createDicomBtn.textContent = T('Creating…');
 
-  const instanceCount = {};
-  for (const s of createSeries) instanceCount[s.id] = 0;
-
-  for (let i = 0; i < createImages.length; i++) {
-    const img = createImages[i];
-    const seriesId = img.series || createSeries[0].id;
-    const meta = seriesMetaMap[seriesId] || seriesMetaMap[createSeries[0].id];
-    instanceCount[seriesId] = (instanceCount[seriesId] || 0) + 1;
-    try {
-      const buf  = await buildDicomFromImage(img.file, meta, instanceCount[seriesId]);
-      const blob = new Blob([buf], { type: 'application/dicom' });
-      const a    = document.createElement('a');
-      a.href     = URL.createObjectURL(blob);
-      a.download = img.file.name.replace(/\.[^.]+$/, '') + '.dcm';
-      document.body.appendChild(a);
-      a.click();
-      setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 0);
-    } catch (e) {
-      alert(`Failed for ${img.file.name}: ${e.message || e}`);
-    }
+  for await (const out of createDicomOutputs()) {
+    if (out.error) { alert(`Failed for ${out.name}: ${out.error}`); continue; }
+    const blob = new Blob([out.buf], { type: 'application/dicom' });
+    const a    = document.createElement('a');
+    a.href     = URL.createObjectURL(blob);
+    a.download = out.name;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 0);
   }
 
   createDicomBtn.disabled = false;
