@@ -27,6 +27,11 @@ Licensed under **AGPL-3.0-or-later** (see [LICENSE](LICENSE)).
   back to the SPS ID, as the worklist does). Only the hash is read, never a query string, and it
   is cleared once read. While an order is attached the patient's name and ID are locked;
   Anonymize and Randomize drop the order with its accession and referring physician.
+- **Create sends the files back to the worklist** that opened it, when its bridge order carries
+  a `reply` token: the button becomes **⬆ Create and send back**, the files are posted to that
+  page (`window.opener`, at the origin the bridge delivered from) instead of downloaded, and its
+  answer is shown. A refusal is said beside the button and can be retried; if the worklist
+  window has been closed, the files are downloaded as before.
 - Create writes Accession Number and Referring Physician's Name (both Type 2), with new fields
   for both.
 - The validator knows Ophthalmic Photography 8 Bit: its Type 1/2 attributes, and Image

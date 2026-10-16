@@ -26,7 +26,7 @@ window.addEventListener('load', () => {
       clearTimeout(giveUp);
       // An order for Create (js/create.js, "Prefill") rather than a study to open.
       try {
-        if (await takeCreateHandoff(incoming)) { showLoading?.(false); return; }
+        if (await takeCreateHandoff(incoming, info)) { showLoading?.(false); return; }
       } catch (err) { showLoading?.(false); toast?.(err.message || String(err)); return false; }
       showLoading?.(true, 'Copying study from Carino DICOM…');
       try {

@@ -414,6 +414,95 @@
       ok('an order without the carinoCreate marker is refused', threw);
     }
 
+    // ---- the files go back to the worklist that sent the order ------------------------
+    // A stand-in worklist in a same-origin frame plays window.opener: it answers what Create
+    // posts the way Carino DICOM's dashboard does, ok or refused.
+    {
+      reset();
+      const frame = document.createElement('iframe');
+      frame.style.display = 'none';
+      frame.srcdoc = '<script>window.got = []; window.answer = { ok: true };' +
+        'addEventListener("message", (e) => { const d = e.data; if (!d || d.carinoCreate !== "files") return;' +
+        ' got.push({ origin: e.origin, d }); setTimeout(() => parent.postMessage({ carinoCreate: "stored",' +
+        ' reply: d.reply, ok: answer.ok, message: answer.message }, "*"), 20); });<\/script>';
+      document.body.appendChild(frame);
+      await new Promise(r => { frame.onload = r; });
+      const worklist = frame.contentWindow;
+      const realOpener = window.opener;
+      window.opener = worklist;
+      const UID = '1.2.826.0.1.3680043.10.743.9.2';
+      const TOKEN = 'a1b2c3d4e5f60718293a4b5c6d7e8f90';
+      const orderFile = (extra) => new File([JSON.stringify({ carinoCreate: 1, kind: 'eye', patient_id: 'W-1',
+        patient_name: 'DOE^JANE', study_uid: UID, ...extra })], 'o.carino-create.json', { type: 'application/json' });
+      const press = async () => {
+        createDicomBtn.click();
+        await tick();
+        for (let i = 0; i < 400 && createDicomBtn.disabled; i++) await new Promise(r => setTimeout(r, 10));
+      };
+      try {
+        await takeCreateHandoff([orderFile({ reply: TOKEN })]);
+        ok('without the bridge\'s origin there is no way back', createReturn === null);
+        await takeCreateHandoff([orderFile({ reply: 'short' })], { origin: location.origin });
+        ok('a malformed reply token is ignored', createReturn === null);
+        await takeCreateHandoff([orderFile({ reply: TOKEN, study_uid: '' })], { origin: location.origin });
+        ok('a reply without an ordered study is ignored (it would send a new study back)', createReturn === null);
+
+        await takeCreateHandoff([orderFile({ reply: TOKEN }), await jpegFile('W1_OS.jpg', src)], { origin: location.origin });
+        $('cdEyeDevice').value = 'external';
+        ok('an order with a reply token sends its files back', !!createReturn && createReturn.token === TOKEN &&
+           !$('cdReturn').classList.contains('hidden'));
+        ok('and the button says so', createDicomBtn.dataset.i18nKey === '⬆ Create and send back');
+        downloads = [];
+        // A message with the right token from anyone but the worklist is not its answer.
+        setTimeout(() => window.postMessage({ carinoCreate: 'stored', reply: TOKEN, ok: false, message: 'forged' }, '*'), 5);
+        await press();
+        const got = worklist.got;
+        ok('Create posts the files to the worklist, nothing is downloaded', got.length === 1 && downloads.length === 0,
+           `${got.length} posted, ${downloads.length} downloaded`);
+        const sent = got[0] && got[0].d;
+        ok('with the token, at this page\'s origin only', !!sent && sent.reply === TOKEN && got[0].origin === location.origin);
+        const f = sent && sent.files && sent.files[0];
+        // The frame's own ArrayBuffer (structured clone), so not instanceof this page's.
+        const sd = f && Object.prototype.toString.call(f.body) === '[object ArrayBuffer]' ? DicomMessage.readFile(f.body.slice(0)).dict : null;
+        ok('each file is a named Part 10 buffer in the ordered study', !!sd && /\.dcm$/.test(f.name) &&
+           f.type === 'application/dicom' && str(sd, '0020000D') === UID && str(sd, '00100020') === 'W-1' &&
+           str(sd, '00200062') === 'L', f && `${f.name} ${f.type} ${sd && str(sd, '0020000D')}`);
+        ok('a forged answer from another window is ignored', $('cdBlock').classList.contains('hidden'));
+        ok('once filed, the order is let go', createReturn === null && $('cdOrder').classList.contains('hidden') &&
+           createDicomBtn.dataset.i18nKey === '⬇ Create DICOM');
+
+        // Refused (signed out, order closed): nothing downloaded, said beside the button, retry possible.
+        await takeCreateHandoff([orderFile({ reply: TOKEN })], { origin: location.origin });
+        worklist.answer = { ok: false, message: 'order is already closed' };
+        downloads = [];
+        await press();
+        ok('a refusal is said beside the button', !$('cdBlock').classList.contains('hidden') &&
+           $('cdBlock').textContent.includes('order is already closed'), $('cdBlock').textContent);
+        ok('and keeps the way back for a retry', !!createReturn && downloads.length === 0);
+
+        // The worklist window is gone: the files are downloaded as they would be without it.
+        frame.remove();
+        downloads = [];
+        await press();
+        ok('a closed worklist window means a download instead', downloads.length === 1 && createReturn === null,
+           `${downloads.length} downloaded`);
+      } finally {
+        window.opener = realOpener;
+        frame.remove();
+        reset();
+      }
+      const RETURN_STRINGS = ['⬆ Create and send back',
+        'The files go back to the worklist that sent this order instead of being downloaded.',
+        'The worklist refused the files.', 'No answer from the worklist window.',
+        'The worklist window was closed, so the files were downloaded instead.', 'Sending…',
+        'Sent {n} file(s) back to the worklist.', 'Not sent: {err}. Press the button again to try again.'];
+      for (const loc of ['es', 'pt-BR', 'ja', 'ru']) {
+        const missing = RETURN_STRINGS.filter(k => !I18N[loc] || !I18N[loc][k] ||
+          ['{n}', '{err}'].some(ph => k.includes(ph) && !I18N[loc][k].includes(ph)));
+        ok(`i18n: the send-back strings are translated into ${loc}`, missing.length === 0, missing.join(' | '));
+      }
+    }
+
     // ---- every new string in all four locales -----------------------------------------
     {
       const NEW_STRINGS = [

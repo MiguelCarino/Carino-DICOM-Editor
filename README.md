@@ -77,6 +77,15 @@ sex is dropped, not cut short. With `study_uid` every file joins that study; `pr
 `sps_id` go into the Request Attributes Sequence. Only the hash form is read: a query string
 (`?create=…`) would put the patient's details in the server's access log.
 
+A bridge order may also carry `"reply": "<token>"` (16 to 128 letters, digits, `_` or `-`).
+Create then sends what it makes back to the page that sent the order instead of downloading
+it, and the button says **⬆ Create and send back**. The files go to `window.opener`, posted only
+to the origin the bridge delivered from, as
+`{ "carinoCreate": "files", "reply": "<token>", "files": [{ "name", "type", "body" }] }` with each
+body an `ArrayBuffer`. The sender answers `{ "carinoCreate": "stored", "reply": "<token>", "ok",
+"message" }`. A refusal is shown and can be retried. If the sender's window is gone, the files
+are downloaded. Carino DICOM uses this for **Add eye photos** on an order.
+
 While an order is attached, the patient's name and ID cannot be edited. **Make a new study
 instead** detaches it; **Anonymize** and **Randomize** detach it too, and clear the accession
 number and referring physician.

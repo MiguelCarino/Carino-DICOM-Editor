@@ -832,8 +832,15 @@ createDicomBtn.addEventListener('click', async () => {
   createDicomBtn.disabled = true;
   createDicomBtn.textContent = T('Creating…');
 
+  // An order that came with a way back sends its files there; a closed worklist window
+  // cannot take them, so they are downloaded as usual.
+  const sendBack = !!createReturn;
+  const closed = sendBack && !createReturnOpen();
+  if (closed) { createReturn = null; renderCreateOrder(); }
+  const made = [];
   for await (const out of createDicomOutputs()) {
     if (out.error) { alert(`Failed for ${out.name}: ${out.error}`); continue; }
+    if (createReturn) { made.push(out); continue; }
     const blob = new Blob([out.buf], { type: 'application/dicom' });
     const a    = document.createElement('a');
     a.href     = URL.createObjectURL(blob);
@@ -842,8 +849,26 @@ createDicomBtn.addEventListener('click', async () => {
     a.click();
     setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 0);
   }
+  if (closed) toast(T('The worklist window was closed, so the files were downloaded instead.'), 5000);
+
+  if (made.length) {
+    createDicomBtn.textContent = T('Sending…');
+    try {
+      await sendCreatedBack(made);
+      showCreateBlock('');
+      toast(T('Sent {n} file(s) back to the worklist.').replace('{n}', made.length), 4000);
+      // The order is filled now; another press would be another study for it.
+      createOrder = {};
+      renderCreateOrder();
+    } catch (err) {
+      // Kept, not downloaded: the usual cause (signed out, a refusal) is fixed and retried.
+      const msg = T('Not sent: {err}. Press the button again to try again.').replace('{err}', err.message || String(err));
+      showCreateBlock(msg);
+      toast(msg, 5000);
+    }
+  }
 
   createDicomBtn.disabled = false;
-  createDicomBtn.textContent = T('⬇ Create DICOM');
+  setCreateButtonLabel();
 });
 

@@ -730,6 +730,7 @@ async function* createDicomOutputs() {
 //   Carino Bridge (#carino-bridge): a file named *.carino-create.json beside any photos, holding
 //     { "carinoCreate": 1, "kind": "eye", "patient_name": "DOE^JANE", … same keys … }
 //       The photos, if any, are added to Create. Nothing in the payload reaches the URL.
+//       With "reply": "<token>" the files go back to the sender, see "Sending the files back".
 //
 // Anything that would not fit its DICOM VR is dropped rather than cut: a truncated Patient ID is
 // a different patient. study_uid makes every file join that study instead of a new one.
@@ -738,6 +739,7 @@ const CREATE_PREFILL_FIELDS = {
   study_desc: 64, procedure_id: 16, sps_id: 16, study_uid: 64, referring: 64,
 };
 let createOrder = {};
+let createReturn = null;            // { to: Window, origin, token }, see "Sending the files back"
 
 // The hash only: a query string reaches the server's access log, patient details and all.
 function parseCreateHash(hash) {
@@ -774,6 +776,7 @@ function applyCreatePrefill(p) {
     studyUID: v.study_uid || '', procedureId: v.procedure_id || '', spsId: v.sps_id || '',
     procedure: v.study_desc || '',
   };
+  createReturn = null;              // a new order never inherits an earlier one's way back
   renderCreateOrder();
   setCreateKind(p.kind === 'eye' ? 'eye' : createKind);
   switchTab('create');
@@ -802,19 +805,64 @@ function renderCreateOrder() {
   $('cdOrder').classList.toggle('hidden', !has);
   $('cdOrderUID').textContent = createOrder.studyUID || createOrder.procedureId || createOrder.spsId || '';
   $('cdPatientName').readOnly = $('cdPatientID').readOnly = has;
+  if (!has) createReturn = null;    // without the order the files belong to no one's study
+  $('cdReturn').classList.toggle('hidden', !createReturn);
+  setCreateButtonLabel();
+}
+
+function setCreateButtonLabel() {
+  // Through data-i18n-key, so a language switch keeps whichever label is showing.
+  createDicomBtn.dataset.i18nKey = createReturn ? '⬆ Create and send back' : '⬇ Create DICOM';
+  createDicomBtn.textContent = T(createDicomBtn.dataset.i18nKey);
 }
 
 $('cdOrderClear').addEventListener('click', () => { createOrder = {}; renderCreateOrder(); });
 
+// ---- Sending the files back to the worklist that sent the order ----
+// A bridge order may carry "reply", a token the sender made for it. The files Create makes are
+// then posted to that sender (window.opener, at the origin the bridge delivered from and no
+// other) instead of downloaded, and the sender files them against its order:
+//   editor → sender  { carinoCreate: 'files', reply, files: [{ name, type, body: ArrayBuffer }] }
+//   sender → editor  { carinoCreate: 'stored', reply, ok, message }
+// The token ties the answer to this order; the origin check keeps the files from anyone else.
+const CREATE_REPLY_WAIT = 120000;   // the sender uploads them before it answers
+
+function createReturnOpen() { return !!(createReturn && createReturn.to && !createReturn.to.closed); }
+
+function sendCreatedBack(outs) {
+  const r = createReturn;
+  return new Promise((resolve, reject) => {
+    const done = () => { clearTimeout(timer); window.removeEventListener('message', onMsg); };
+    const onMsg = e => {
+      const d = e.data;
+      if (e.source !== r.to || e.origin !== r.origin || !d || d.carinoCreate !== 'stored' || d.reply !== r.token) return;
+      done();
+      if (d.ok) resolve(d); else reject(new Error(String(d.message || T('The worklist refused the files.'))));
+    };
+    const timer = setTimeout(() => { done(); reject(new Error(T('No answer from the worklist window.'))); }, CREATE_REPLY_WAIT);
+    window.addEventListener('message', onMsg);
+    // Copied rather than transferred: if the sender refuses them they are still here to retry.
+    r.to.postMessage({ carinoCreate: 'files', reply: r.token,
+      files: outs.map(o => ({ name: o.name, type: 'application/dicom', body: o.buf })) }, r.origin);
+  });
+}
+
 const CREATE_HANDOFF = /\.carino-create\.json$/i;
 // A bridge delivery that is a Create order. true when it was one, whatever else it held.
-async function takeCreateHandoff(files) {
+// info is the bridge's { origin }: only a delivery from window.opener can be answered.
+async function takeCreateHandoff(files, info) {
   const order = files.find(f => CREATE_HANDOFF.test(f.name || ''));
   if (!order) return false;
   let p;
   try { p = JSON.parse(await order.text()); } catch (_) { p = null; }
   if (!p || p.carinoCreate !== 1) throw new Error(T('The order sent to Create could not be read.'));
   applyCreatePrefill(p);
+  // Only with an order to file them under: a reply without one would send a new study back.
+  if (typeof p.reply === 'string' && /^[\w-]{16,128}$/.test(p.reply) && info && info.origin &&
+      window.opener && createOrder.studyUID) {
+    createReturn = { to: window.opener, origin: info.origin, token: p.reply };
+    renderCreateOrder();
+  }
   addCreateImages(files.filter(f => f !== order));
   return true;
 }
