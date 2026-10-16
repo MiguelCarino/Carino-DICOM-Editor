@@ -72,6 +72,37 @@
       ok('match: an accented, naturalised PN meets plain OCR',
          O.matchLine([{ text: 'MUNOZ' }, { text: 'JOSE' }], t3).every(Boolean));
       ok('match: an empty dataset proposes nothing', O.terms({}).length === 0);
+
+      // A label run into its value is one OCR word; the value must still be found. And the
+      // banner attributes beyond name/ID/dates, and a TM stored without seconds.
+      const t4 = O.terms({
+        '00100010': { vr: 'PN', Value: ['Doe^John'] },
+        '00100020': { vr: 'LO', Value: ['A12'] },
+        '00081050': { vr: 'PN', Value: ['House^Gregory'] },
+        '00081048': { vr: 'PN', Value: ['Wilson^James'] },
+        '00200010': { vr: 'SH', Value: ['S4471'] },
+        '00101010': { vr: 'AS', Value: ['045Y'] },
+        '00081010': { vr: 'SH', Value: ['USROOM3'] },
+        '00080032': { vr: 'TM', Value: ['1430'] },
+      });
+      const l4 = (...ws) => O.matchLine(ws.map(text => ({ text })), t4).map(Boolean);
+      const cases4 = [
+        ['a label and a long name run together', ['Patient:DOE^JOHN'], [true]],
+        ['a label and a short name run together', ['PT:DOE'], [true]],
+        ['a label and a short ID run together', ['ID:A12'], [true]],
+        ['a label alone', ['PATIENT:'], [false]],
+        ['a short ID inside a longer word is not it', ['A123'], [false]],
+        ['performing physician', ['HOUSE'], [true]],
+        ['physician of record', ['Dr', 'Wilson'], [false, true]],
+        ['study ID', ['STUDY', 'S4471'], [false, true]],
+        ["patient's age without its leading zero", ['AGE', '45Y'], [false, true]],
+        ['station name', ['USROOM3'], [true]],
+        ['a TM stored as HHMM shown with seconds', ['14:30:00'], [true]],
+      ];
+      for (const [label, words, want] of cases4) {
+        const got = l4(...words);
+        ok(`match: ${label}`, JSON.stringify(got) === JSON.stringify(want), `${words.join(' ')} -> ${JSON.stringify(got)}`);
+      }
     }
 
     // ---- merging --------------------------------------------------------------
@@ -246,6 +277,40 @@
       R.state.boxes = saved;
     }
 
+    // A frame that does not decode is not read; the status must say which, and a file with
+    // no readable frame is an error, not "No text found". decodeDicomPixels is a global
+    // function declaration, so js/ocr.js picks up the stub through the global object.
+    {
+      const status = () => document.getElementById('redactFindStatus').textContent;
+      const realDecode = window.decodeDicomPixels, saved = R.state.boxes.slice();
+      try {
+        window.decodeDicomPixels = (d, f, o) => f === 1 ? Promise.resolve({ error: 'broken fragment' }) : realDecode(d, f, o);
+        document.getElementById('redactFind').click();
+        await R.state.finding;
+        const note = t('Frame(s) {list} could not be read; check them yourself.').replace('{list}', '2');
+        ok('undecodable frame: the status names it', status().includes(note), status());
+        ok('undecodable frame: the frame that did decode was still read',
+           R.state.boxes.some(b => b.ocr && b.phi), String(R.state.boxes.filter(b => b.ocr).length));
+        window.decodeDicomPixels = () => Promise.resolve(null);
+        document.getElementById('redactFind').click();
+        await R.state.finding;
+        ok('no frame decodes: an error, not "No text found"',
+           status() === t('Text could not be read: {e}').replace('{e}', t('No frame of this image could be decoded.')), status());
+      } finally { window.decodeDicomPixels = realDecode; }
+      R.state.boxes = saved;
+    }
+
+    // Proposals on screen but none selected: the hint points at the boxes, not at drawing.
+    {
+      const saved = R.state.boxes.slice();
+      R.state.boxes = saved.filter(b => b.ocr).map(b => ({ ...b, on: false }));
+      document.getElementById('redactApply').click();
+      const toastEl = document.querySelector('.toast');
+      ok('apply with nothing selected: says to click a yellow box',
+         !!toastEl && toastEl.textContent === t('Click a yellow box to select it, or draw a box.'), toastEl && toastEl.textContent);
+      R.state.boxes = saved;
+    }
+
     // Apply goes through the existing redaction: same retagging, same undo.
     const before = frames.map(f => f.slice());
     document.getElementById('redactApply').click();
@@ -304,6 +369,8 @@
       'No text found. Check the whole image yourself: text can be missed.',
       'Stopped. No boxes were added.',
       'This file is already de-identified, so its tags no longer hold the patient details to match. Select the boxes yourself.',
+      'No frame of this image could be decoded.', 'Frame(s) {list} could not be read; check them yourself.',
+      'Click a yellow box to select it, or draw a box.',
     ];
     for (const loc of ['es', 'pt-BR', 'ja', 'ru']) {
       const missing = NEW_STRINGS.filter(s => !I18N[loc] || !I18N[loc][s]);

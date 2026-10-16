@@ -8,7 +8,12 @@ lockfile somewhere.
 
 **The rule for this directory is absolute:** no reference under `vendor/` may
 resolve off-origin. Not a `<script src>`, not an `@import`, not a web font, not
-a worker URL, not a source map.
+a worker URL, not a source map. The one place an off-origin URL is *written* is
+the tesseract.js bundles: three jsDelivr defaults that never resolve, because
+`js/ocr.js` always overrides all three and `tests/realtime.py` fails any request
+that leaves the origin (see "The off-origin rule, for these bundles
+specifically" below). A grep for `https://` in those two files finds them;
+that is expected.
 
 The identical tree is bundled inside Carino DICOM, which serves this editor from
 its dashboard; the two are kept byte-identical on purpose.

@@ -39,13 +39,18 @@ Licensed under **AGPL-3.0-or-later** (see [LICENSE](LICENSE)).
   no request leaves the page's origin). Each frame is read twice, its brightest pixels alone
   (consoles burn text at full white) and as shown, after upscaling small frames up to 3x. Words that match the
   file's own identifying attributes (Patient Name, Patient ID, Other Patient IDs and the
-  Other Patient IDs Sequence, Birth Date, Accession Number, Institution Name, Referring
-  Physician, Operators' Name, and the study, series, acquisition and content dates and
-  times; PS3.15 Table E.1-1) are proposed and selected. Matching folds case, accents,
-  separators and the common OCR confusions, knows day-first, month-first, two-digit-year and
-  month-name dates, and lets values of 7+ characters differ by one character. Other text
+  Other Patient IDs Sequence, Birth Date, Patient's Age, Accession Number, Study ID,
+  Institution Name, Station Name, Referring, Performing and Record physicians, Operators'
+  Name, and the study, series, acquisition and content dates and times; PS3.15 Table E.1-1)
+  are proposed and selected. Matching folds case, accents, separators and the common OCR
+  confusions, knows day-first, month-first, two-digit-year and month-name dates, finds a
+  value run into its label (`PT:DOE`, `ID:A12`), and lets values of 7+ characters differ by
+  one character. Other text
   (measurements, markers, scales) is outlined and left unselected. Overlapping reads and
   neighbouring words are merged and padded. A click switches a box; Stop cancels the run.
+  A frame that cannot be decoded is named in the result ("check them yourself"), and a file
+  with no decodable frame is an error rather than "No text found". With proposals on screen
+  but none selected, Apply says to click a yellow box instead of to draw one.
   Apply is the existing redaction, with its retagging and undo. The copy says it runs on
   this device and can miss text, and says when a file is already de-identified (Patient
   Identity Removed = YES), since its tags then hold nothing to match.

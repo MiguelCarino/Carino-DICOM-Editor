@@ -663,7 +663,12 @@ document.addEventListener('keydown', e => {
 $('redactApply')?.addEventListener('click', () => {
   const entry = files[currentFileIdx];
   if (!entry) return;
-  if (!redactSelected().length) { toast(T('Draw at least one box first.')); return; }
+  if (!redactSelected().length) {
+    // Find's proposals may all be unselected (a de-identified file, or the user's clicks).
+    toast(T(redactUI.boxes.some(b => b.ocr) ? 'Click a yellow box to select it, or draw a box.'
+                                            : 'Draw at least one box first.'));
+    return;
+  }
   const sup = redactionSupport(entry.meta);
   // Copy now: closeRedactWorkspace() empties the array while applyRedaction is async.
   const boxes = redactSelected().map(({ x, y, w, h }) => ({ x, y, w, h }));

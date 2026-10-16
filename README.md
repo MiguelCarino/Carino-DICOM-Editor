@@ -128,9 +128,10 @@ Compressed images are decompressed first. Afterwards Burned In Annotation is set
 is uploaded: the engine ([Tesseract.js](https://github.com/naptha/tesseract.js) and its
 English model, ~8 MB in [`vendor/tesseract/`](vendor/tesseract/)) loads only when you press
 the button. Text that matches the file's own patient details is proposed and selected:
-Patient Name, Patient ID and Other Patient IDs, Birth Date, Accession Number, Institution
-Name, Referring Physician, Operators' Name, and the study, series, acquisition and content
-dates and times. Matching ignores case, separators and accents, accepts the usual OCR
+Patient Name, Patient ID and Other Patient IDs, Birth Date, Patient's Age, Accession
+Number, Study ID, Institution Name, Station Name, the referring, performing and record
+physicians, Operators' Name, and the study, series, acquisition and content dates and
+times. A frame that cannot be decoded is not read, and the result names it. Matching ignores case, separators and accents, accepts the usual OCR
 mix-ups (O/0, I/l/1, S/5, B/8) and, for longer values, one wrong character, so
 `14.03.1960`, `03/14/1960` and `14 MAR 1960` all match a Birth Date of `19600314`. Other
 text, such as measurements, L/R markers and scales, is outlined but not selected, because
