@@ -12,8 +12,10 @@ Licensed under **AGPL-3.0-or-later** (see [LICENSE](LICENSE)).
   Image, Ocular Region Imaged, Acquisition Parameters, Photographic Parameters, Synchronization
   and Multi-frame modules. Each thumbnail gets a Right / Left / Both picker for Image Laterality
   `(0020,0062)`, filled from the file name (OD/OS/OU, OI, OE, right/left, derecho/izquierdo) and
-  required before anything is written. A baseline JPEG goes in byte for byte as JPEG Baseline
-  with `YBR_FULL_422`, Lossy Image Compression `01`, its ratio and `ISO_10918_1`; other JPEGs
+  required before anything is written. A baseline JPEG goes in without re-encoding as JPEG
+  Baseline with `YBR_FULL_422`, Lossy Image Compression `01`, its ratio and `ISO_10918_1`; its
+  EXIF/XMP, other APPn segments, comments and anything after EOI are left out of the fragment
+  (they can hold GPS, owner, serial or a preview, out of reach of de-identification). Other JPEGs
   (progressive, RGB-coded, EXIF-rotated) and PNG are stored decoded as RGB. Device and region are
   CID 4202 / CID 4209 codes. A fundus camera needs its field of view, from which the nominal
   Pixel Spacing is written. EXIF capture time becomes Acquisition DateTime. No optic-disc
@@ -21,9 +23,12 @@ Licensed under **AGPL-3.0-or-later** (see [LICENSE](LICENSE)).
 - **Create can be opened with an order** from a worklist: `#create=eye&patient_id=…` or a
   `*.carino-create.json` file over the Carino Bridge, with the keys Carino DICOM's orders use
   (format in `js/create.js` and the README). `study_uid` makes the files join that study, and
-  `procedure_id` / `sps_id` fill the Request Attributes Sequence. The hash is cleared once read.
-- Create writes Accession Number and Referring Physician's Name (both Type 2), with a new
-  Accession Number field.
+  `procedure_id` / `sps_id` fill the Request Attributes Sequence (Requested Procedure ID falls
+  back to the SPS ID, as the worklist does). Only the hash is read, never a query string, and it
+  is cleared once read. While an order is attached the patient's name and ID are locked;
+  Anonymize and Randomize drop the order with its accession and referring physician.
+- Create writes Accession Number and Referring Physician's Name (both Type 2), with new fields
+  for both.
 - The validator knows Ophthalmic Photography 8 Bit: its Type 1/2 attributes, and Image
   Laterality R, L or B only (a missing or `U` laterality is an error). A sequence with items now
   counts as having a value.

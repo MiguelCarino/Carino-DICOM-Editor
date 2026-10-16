@@ -48,10 +48,11 @@ window.addEventListener('load', () => {
   }
 
   // ---- (A1a) Create prefill: #create[=eye]&patient_id=… (format in js/create.js) ----
-  const order = parseCreateHash(hash);
+  // From the hash only (parseCreateHash refuses a query string, which reaches server logs).
+  const order = parseCreateHash(location.hash);
   if (order) {
     // Read once, then gone from the address bar and from history.
-    try { history.replaceState(null, '', location.pathname + (location.hash ? location.search : '')); } catch (_) {}
+    try { history.replaceState(null, '', location.pathname + location.search); } catch (_) {}
     applyCreatePrefill(order);
     return;
   }

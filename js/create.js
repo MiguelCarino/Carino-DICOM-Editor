@@ -101,6 +101,7 @@ function removeSeries(id) {
 
 function renderCreateGrid() {
   setCountPill(createImgCount, createImages.length);
+  refreshCreateBlock();
   if (!createImages.length) {
     createImgGrid.innerHTML = `
       <div class="img-empty">
@@ -377,6 +378,52 @@ function inspectJpeg(u) {
   return j.sof === null ? null : j;
 }
 
+// The JPEG cut down to what decoding needs, for the Pixel Data fragment; null when it has no EOI.
+// EXIF and XMP (APP1), IPTC (APP13), the other APPn and COM can hold GPS, the camera's owner and
+// serial, or a preview picture: identifying data inside the pixel stream, where de-identification
+// (which works on data elements) cannot reach it. Kept: JFIF (thumbnail emptied), the ICC profile
+// and Adobe's colour transform, which change how the pixels decode. Tables, frame and scan headers
+// and the entropy-coded data are copied unchanged, so this is not a re-encoding. Stopping at the
+// first EOI also leaves out what cameras append after it (MPF previews, depth maps): the fragment
+// holds this one frame only (PS3.5 A.4).
+function jpegForDicom(u) {
+  const ascii = (seg, n) => String.fromCharCode(...seg.subarray(0, n));
+  const parts = [u.subarray(0, 2)];
+  let p = 2;
+  while (p + 2 <= u.length) {
+    if (u[p] !== 0xFF) return null;
+    const m = u[p + 1];
+    if (m === 0xFF) { p++; continue; }                                    // fill byte
+    if (m === 0xD9) {
+      parts.push(u.subarray(p, p + 2));
+      const out = new Uint8Array(parts.reduce((n, a) => n + a.length, 0));
+      parts.reduce((o, a) => (out.set(a, o), o + a.length), 0);
+      return out;
+    }
+    if (m === 0x01 || (m >= 0xD0 && m <= 0xD8)) { p += 2; continue; }      // stray, no length
+    if (p + 4 > u.length) return null;
+    const end = p + 2 + ((u[p + 2] << 8) | u[p + 3]);
+    if (end > u.length) return null;
+    const seg = u.subarray(p + 4, end);
+    if (m === 0xE0 && seg.length >= 14 && ascii(seg, 5) === 'JFIF\0') {
+      parts.push(new Uint8Array([0xFF, 0xE0, 0, 16, ...seg.subarray(0, 12), 0, 0]));
+    } else if ((m === 0xE2 && ascii(seg, 12) === 'ICC_PROFILE\0') || (m === 0xEE && ascii(seg, 5) === 'Adobe')) {
+      parts.push(u.subarray(p, end));
+    } else if (!((m >= 0xE0 && m <= 0xEF) || m === 0xFE)) {
+      parts.push(u.subarray(p, end));
+    }
+    p = end;
+    if (m === 0xDA) {
+      // Entropy-coded data runs to the next marker: an FF that is neither stuffed (FF00) nor RSTn.
+      let q = p;
+      while (q + 1 < u.length && !(u[q] === 0xFF && u[q + 1] !== 0 && (u[q + 1] < 0xD0 || u[q + 1] > 0xD7))) q++;
+      parts.push(u.subarray(p, q));
+      p = q;
+    }
+  }
+  return null;
+}
+
 // Why these JPEG bytes cannot be filed unchanged, or '' when they can.
 function jpegKeepProblem(j) {
   // JPEG Baseline (1.2.840.10008.1.2.4.50) is ISO 10918-1 Process 1 only (PS3.5 A.4.1):
@@ -418,7 +465,8 @@ async function buildEyePhotoDicom(file, meta, instanceNum, eye) {
   const dev = EYE_DEVICES[meta.eyeDevice] || EYE_DEVICES.fundus;
   const bytes = new Uint8Array(await file.arrayBuffer());
   const jpeg = inspectJpeg(bytes);
-  const keep = !!jpeg && !jpegKeepProblem(jpeg);
+  const clean = jpeg && jpegForDicom(bytes);
+  const keep = !!clean && !jpegKeepProblem(jpeg);
 
   let rows, cols, spp, pixel, ts, photometric, lossy, ratio;
   if (keep) {
@@ -427,10 +475,10 @@ async function buildEyePhotoDicom(file, meta, instanceNum, eye) {
     // PS3.5 Table 8.2.1-1, narrowed by C.8.17.2.1.3: YCbCr colour JPEG is YBR_FULL_422 whatever
     // its subsampling; the decoder takes the sampling from the frame header.
     photometric = spp === 3 ? 'YBR_FULL_422' : 'MONOCHROME2';
-    pixel = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
+    pixel = clean.buffer;
     ts = TS_JPEG_BASELINE;
     lossy = 'ISO_10918_1';
-    ratio = rows * cols * spp / bytes.length;
+    ratio = rows * cols * spp / clean.length;
   } else {
     const r = await imageToRGB(file);
     ({ rows, cols } = r);
@@ -440,7 +488,7 @@ async function buildEyePhotoDicom(file, meta, instanceNum, eye) {
     ts = TS_EXPLICIT_LE;
     // A JPEG decoded here was still lossy once; "01" may never be reset (C.7.6.1.1.5).
     lossy = lossyMethodFor(file, jpeg);
-    ratio = rows * cols * 3 / bytes.length;
+    ratio = rows * cols * 3 / (clean || bytes).length;
   }
 
   // Acquisition DateTime is Type 1C, required for ORIGINAL (C.8.17.2): the camera's own capture
@@ -631,7 +679,7 @@ async function* createDicomOutputs() {
     patientDOB:       ($('cdPatientDOB').value || '').replace(/-/g, ''),
     patientSex:       $('cdPatientSex').value,
     accession:        $('cdAccession').value.trim(),
-    referring:        createOrder.referring || '',
+    referring:        $('cdReferring').value.trim(),
     studyUID:         createOrder.studyUID || newUID(),
     request:          createRequestItem(),
     studyDate,
@@ -691,9 +739,11 @@ const CREATE_PREFILL_FIELDS = {
 };
 let createOrder = {};
 
+// The hash only: a query string reaches the server's access log, patient details and all.
 function parseCreateHash(hash) {
-  const h = String(hash || '').replace(/^[#?]/, '');
-  const params = new URLSearchParams(h);
+  const h = String(hash || '');
+  if (h[0] !== '#') return null;
+  const params = new URLSearchParams(h.slice(1));
   if (!params.has('create')) return null;
   const p = { kind: params.get('create') };
   for (const k of Object.keys(CREATE_PREFILL_FIELDS)) if (params.has(k)) p[k] = params.get(k);
@@ -718,10 +768,11 @@ function applyCreatePrefill(p) {
   $('cdPatientDOB').value  = v.patient_birthdate ? `${dob.slice(0, 4)}-${dob.slice(4, 6)}-${dob.slice(6, 8)}` : '';
   $('cdPatientSex').value  = v.patient_sex || '';
   $('cdAccession').value   = v.accession || '';
+  $('cdReferring').value   = v.referring || '';
   $('cdStudyDesc').value   = v.study_desc || '';
   createOrder = {
     studyUID: v.study_uid || '', procedureId: v.procedure_id || '', spsId: v.sps_id || '',
-    procedure: v.study_desc || '', referring: v.referring || '',
+    procedure: v.study_desc || '',
   };
   renderCreateOrder();
   setCreateKind(p.kind === 'eye' ? 'eye' : createKind);
@@ -734,7 +785,9 @@ function createRequestItem() {
   const o = createOrder;
   if (!o.procedureId && !o.spsId) return null;
   const item = {};
-  if (o.procedureId) item['00401001'] = { vr: 'SH', Value: [o.procedureId] };
+  // Requested Procedure ID is 1C, required when the procedure was scheduled, as an SPS ID says
+  // it was. Same fallback as the worklist item Carino DICOM serves (pacs/mwl.py), so they match.
+  item['00401001'] = { vr: 'SH', Value: [o.procedureId || o.spsId] };
   if (o.spsId)       item['00400009'] = { vr: 'SH', Value: [o.spsId] };
   if (o.procedure)   item['00321060'] = { vr: 'LO', Value: [o.procedure] };
   const acc = $('cdAccession').value.trim();
@@ -742,10 +795,13 @@ function createRequestItem() {
   return item;
 }
 
+// While an order is attached its patient's name and ID are fixed: files for another patient
+// would otherwise land in this patient's study. "Make a new study instead" frees them.
 function renderCreateOrder() {
   const has = !!(createOrder.studyUID || createOrder.procedureId || createOrder.spsId);
   $('cdOrder').classList.toggle('hidden', !has);
   $('cdOrderUID').textContent = createOrder.studyUID || createOrder.procedureId || createOrder.spsId || '';
+  $('cdPatientName').readOnly = $('cdPatientID').readOnly = has;
 }
 
 $('cdOrderClear').addEventListener('click', () => { createOrder = {}; renderCreateOrder(); });
@@ -765,7 +821,16 @@ async function takeCreateHandoff(files) {
 
 // ---- Quick-fill helpers ----
 // Same split as the Edit tab: Anonymize fills placeholders, Randomize invents a plausible patient.
+// Another patient: the order and its accession and referring physician stay with the real one.
+function dropCreateOrder() {
+  createOrder = {};
+  renderCreateOrder();
+  $('cdAccession').value = '';
+  $('cdReferring').value = '';
+}
+
 function fillCreateAnon() {
+  dropCreateOrder();
   $('cdPatientName').value = ANON_NAME;
   $('cdPatientID').value   = 'ANON';
   $('cdPatientDOB').value  = '';
@@ -779,6 +844,7 @@ function fillCreateRandom() {
   const month = String(1  + Math.floor(Math.random() * 12)).padStart(2, '0');
   const day   = String(1  + Math.floor(Math.random() * 28)).padStart(2, '0');
   const sex   = randFrom(['M', 'F', 'O']);
+  dropCreateOrder();
   $('cdPatientName').value = randName(sex);
   $('cdPatientID').value   = randDigits(8);
   $('cdPatientDOB').value  = `${year}-${month}-${day}`;

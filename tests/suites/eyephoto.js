@@ -77,6 +77,7 @@
   const reset = () => {
     $('clearCreateBtn').click();
     createOrder = {}; renderCreateOrder();
+    $('cdAccession').value = $('cdReferring').value = '';
     setCreateKind('general');
     showCreateBlock('');
   };
@@ -135,8 +136,18 @@
          $('cdBlock').textContent === T('Choose Right, Left or Both on every eye photo first. {n} still need one.').replace('{n}', 1),
          $('cdBlock').textContent);
 
+      // Removing the unlabelled photo unblocks Create; the message must not outlive the reason.
+      const extra = await jpegFile('IMG_0008.jpg');
+      addCreateImages([extra]);
+      ok('adding another unset photo updates the count', $('cdBlock').textContent ===
+         T('Choose Right, Left or Both on every eye photo first. {n} still need one.').replace('{n}', 2), $('cdBlock').textContent);
+      document.querySelectorAll('#createImgGrid .img-thumb-remove')[2].click();
+      ok('and removing it puts the count back', $('cdBlock').textContent ===
+         T('Choose Right, Left or Both on every eye photo first. {n} still need one.').replace('{n}', 1), $('cdBlock').textContent);
+
       $('cdEyeFov').value = '45';
-      change(sels[1], 'L');
+      const sels2 = [...document.querySelectorAll('#createImgGrid .img-thumb-eye')];
+      change(sels2[1], 'L');
       ok('choosing the eye clears the message', $('cdBlock').classList.contains('hidden'), $('cdBlock').textContent);
       ok('and records it on the photo', createImages[1].eye === 'L');
 
@@ -264,6 +275,32 @@
       ok('PNG: the validator finds no errors', !validateDicom(d, msg.meta).some(i => i.sev === 'error'));
     }
 
+    // ---- what a camera adds around the picture stays out of the file -------------------
+    {
+      // EXIF (Orientation 1, so it is kept), a comment, and a second picture after EOI the way
+      // phones append MPF previews. The fragment must be the canvas JPEG again, exactly.
+      const comment = [...'Dr. Who, room 4'].map(c => c.charCodeAt(0));
+      const exif = withExif(src, 1, '2026:03:04 05:06:07');
+      const tagged = new Uint8Array([0xFF, 0xD8, 0xFF, 0xFE, 0, comment.length + 2, ...comment, ...exif.subarray(2),
+        0xFF, 0xD8, 0xFF, 0xDB, 0, 2, 0x12, 0x34, 0xFF, 0xD9]);
+      reset();
+      change($('cdKind'), 'eye');
+      $('cdEyeDevice').value = 'slitlamp';
+      addCreateImages([await jpegFile('tagged_OD.jpg', tagged)]);
+      const [res] = await outputs();
+      const msg = DicomMessage.readFile(res.buf);
+      ok('a tagged baseline JPEG is still kept as JPEG Baseline', str(msg.meta, '00020010') === '1.2.840.10008.1.2.4.50');
+      const frag = firstFragment(res.buf);
+      const body = frag && (frag.bytes.length === src.length + 1 ? frag.bytes.subarray(0, src.length) : frag.bytes);
+      ok('without its EXIF, comment or trailing picture: the scan bytes unchanged', same(body, src),
+         frag ? `${frag.bytes.length} vs ${src.length}` : 'no fragment found');
+      const has = (u, txt) => { const t = [...txt].map(c => c.charCodeAt(0)); return u.some((_, i) => t.every((b, k) => u[i + k] === b)); };
+      ok('no Exif and no comment text left anywhere in the file', !has(new Uint8Array(res.buf), 'Exif\0') && !has(new Uint8Array(res.buf), 'room 4'));
+      ok('the EXIF capture time was still read first', str(msg.dict, '0008002A') === '20260304050607', str(msg.dict, '0008002A'));
+      const ratio = Number(str(msg.dict, '00282112'));
+      ok('the ratio counts only the bytes kept', Math.abs(ratio - 96 * 64 * 3 / src.length) < 0.01, `${ratio}`);
+    }
+
     // ---- JPEGs that cannot be kept as they are ---------------------------------------
     {
       const sof = src.findIndex((b, i) => b === 0xFF && src[i + 1] === 0xC0);
@@ -298,6 +335,7 @@
       reset();
       ok('an unrelated hash is not an order', parseCreateHash('#sample=ct') === null && parseCreateHash('#selftest') === null);
       ok('"#create" alone is one', !!parseCreateHash('#create'));
+      ok('a query string is not (it reaches the server log)', parseCreateHash('?create=eye&patient_id=1') === null);
       const UID = '1.2.826.0.1.3680043.10.743.9.1';
       const p = parseCreateHash('#create=eye&patient_name=DOE%5EJANE&patient_id=P-77&patient_birthdate=1980-01-02' +
         '&patient_sex=F&accession=ACC123&study_desc=Fundus%20photos&procedure_id=RP9&sps_id=SPS9' +
@@ -309,8 +347,10 @@
       ok('with the patient filled in', $('cdPatientName').value === 'DOE^JANE' && $('cdPatientID').value === 'P-77' &&
          $('cdPatientDOB').value === '1980-01-02' && $('cdPatientSex').value === 'F',
          [$('cdPatientName').value, $('cdPatientID').value, $('cdPatientDOB').value, $('cdPatientSex').value].join(' | '));
-      ok('and the study', $('cdAccession').value === 'ACC123' && $('cdStudyDesc').value === 'Fundus photos');
+      ok('and the study', $('cdAccession').value === 'ACC123' && $('cdStudyDesc').value === 'Fundus photos' &&
+         $('cdReferring').value === 'HOUSE^GREG');
       ok('and says it is adding to an ordered study', !$('cdOrder').classList.contains('hidden') && $('cdOrderUID').textContent === UID);
+      ok('the ordered patient\'s name and ID cannot be typed over', $('cdPatientName').readOnly && $('cdPatientID').readOnly);
       $('cdEyeDevice').value = 'external';
       addCreateImages([await jpegFile('x_OU.jpg', src)]);
       const [res] = await outputs();
@@ -323,10 +363,32 @@
       ok('both eyes from "OU"', str(d, '00200062') === 'B');
 
       $('cdOrderClear').click();
-      ok('"Make a new study instead" drops the order', $('cdOrder').classList.contains('hidden'));
+      ok('"Make a new study instead" drops the order', $('cdOrder').classList.contains('hidden') &&
+         !$('cdPatientName').readOnly && !$('cdPatientID').readOnly);
       const [again] = await outputs();
       const d2 = DicomMessage.readFile(again.buf).dict;
       ok('and the next file starts a new study', str(d2, '0020000D') !== UID && lookupTag(d2, '00400275') == null);
+
+      // Anonymize or Randomize is another patient: nothing of the order may follow.
+      for (const btn of ['cdAnonymizeBtn', 'cdRandomizeBtn']) {
+        applyCreatePrefill(p);
+        $(btn).click();
+        const [r] = await outputs();
+        const da = DicomMessage.readFile(r.buf).dict;
+        ok(`${btn}: the order is dropped`, $('cdOrder').classList.contains('hidden') && str(da, '0020000D') !== UID &&
+           lookupTag(da, '00400275') == null && !str(da, '00080050') && !str(da, '00080090'),
+           [str(da, '0020000D'), str(da, '00080050'), str(da, '00080090')].join(' | '));
+      }
+
+      applyCreatePrefill(parseCreateHash('#create=eye&patient_id=P-78&sps_id=SPS7'));
+      const [sp] = await outputs();
+      const rs = lookupTag(DicomMessage.readFile(sp.buf).dict, '00400275')?.Value?.[0];
+      ok('an order with only an SPS ID still names a Requested Procedure ID (1C), as the worklist does',
+         !!rs && str(rs, '00401001') === 'SPS7' && str(rs, '00400009') === 'SPS7', rs && str(rs, '00401001'));
+
+      applyCreatePrefill(parseCreateHash('#create&referring=HOUSE%5EGREG&study_uid=1.02.3'));
+      ok('a referring physician without a valid order is shown, and can be changed',
+         $('cdOrder').classList.contains('hidden') && $('cdReferring').value === 'HOUSE^GREG' && !$('cdReferring').readOnly);
 
       const bad = applyCreatePrefill(parseCreateHash('#create&patient_id=' + 'X'.repeat(65) +
         '&patient_sex=X&patient_birthdate=1980-13&study_uid=1.02.3&accession=OK1'));
@@ -360,7 +422,7 @@
         'Printed on the camera or in its manual, often 45 or 50. Fundus photos need it.',
         "The photos show the patient's name or the date",
         'Choose Right, Left or Both on every photo. A file name with OD, OS, OU, right or left fills it in.',
-        'Accession Number', 'Adding to an ordered study', 'Make a new study instead',
+        'Accession Number', 'Referring Physician', 'Adding to an ordered study', 'Make a new study instead',
         'Which eye?', 'Right (OD)', 'Left (OS)', 'Both (OU)',
         'Choose Right, Left or Both on every eye photo first. {n} still need one.',
         "Enter the camera's field of view in degrees. Fundus photos need it to record the pixel size.",

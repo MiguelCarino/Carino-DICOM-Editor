@@ -39,8 +39,11 @@ instead:
 - **Every photo needs an eye.** Each thumbnail has a Right / Left / Both picker, filled in when
   the file name says OD, OS, OU, OI, OE, right, left, derecho or izquierdo. Nothing is written
   until every photo has one. It goes into Image Laterality `(0020,0062)`.
-- **The camera's JPEG is kept byte for byte** as JPEG Baseline, `YBR_FULL_422`, marked lossy
-  with its compression ratio. A JPEG that cannot be filed that way (progressive, RGB-coded, or
+- **The camera's JPEG is kept without re-encoding** as JPEG Baseline, `YBR_FULL_422`, marked
+  lossy with its compression ratio. What the camera adds around the picture is left out: EXIF
+  and XMP (GPS, owner, serial number, preview), comments, and anything after the image's end
+  marker. Only the JFIF header, ICC profile and Adobe colour marker stay, since they change how
+  it decodes. A JPEG that cannot be filed that way (progressive, RGB-coded, or
   turned only by its EXIF tag, which DICOM viewers ignore) is stored decoded, still marked lossy.
   PNG is stored as uncompressed RGB.
 - **The ophthalmic modules are filled in**: the camera type and the part of the eye as coded
@@ -71,7 +74,12 @@ the same keys travel in a file named `*.carino-create.json`,
 `{ "carinoCreate": 1, "kind": "eye", "patient_id": "123", … }`, optionally with the photos beside
 it, and nothing reaches the URL. A value too long for its DICOM field, a malformed UID, date or
 sex is dropped, not cut short. With `study_uid` every file joins that study; `procedure_id` and
-`sps_id` go into the Request Attributes Sequence.
+`sps_id` go into the Request Attributes Sequence. Only the hash form is read: a query string
+(`?create=…`) would put the patient's details in the server's access log.
+
+While an order is attached, the patient's name and ID cannot be edited. **Make a new study
+instead** detaches it; **Anonymize** and **Randomize** detach it too, and clear the accession
+number and referring physician.
 
 ![Edit tab: the tag table with category filters, plus the Image edits card and the preview](docs/screenshots/edit.webp)
 
