@@ -59,21 +59,21 @@ jobs:
         include:
           - os: ubuntu-latest
             expect: |
-              Carino-DICOM-Editor-1.0.2-x86_64.AppImage
-              Carino-DICOM-Editor-1.0.2-arm64.AppImage
-              Carino-DICOM-Editor-1.0.2-x86_64.rpm
-              Carino-DICOM-Editor-1.0.2-aarch64.rpm
-              Carino-DICOM-Editor-1.0.2-amd64.deb
-              Carino-DICOM-Editor-1.0.2-arm64.deb
+              Carino-DICOM-Editor-1.1.0-x86_64.AppImage
+              Carino-DICOM-Editor-1.1.0-arm64.AppImage
+              Carino-DICOM-Editor-1.1.0-x86_64.rpm
+              Carino-DICOM-Editor-1.1.0-aarch64.rpm
+              Carino-DICOM-Editor-1.1.0-amd64.deb
+              Carino-DICOM-Editor-1.1.0-arm64.deb
           - os: macos-latest
             expect: |
-              Carino-DICOM-Editor-1.0.2-x64.dmg
-              Carino-DICOM-Editor-1.0.2-arm64.dmg
-              Carino-DICOM-Editor-1.0.2-x64.zip
-              Carino-DICOM-Editor-1.0.2-arm64.zip
+              Carino-DICOM-Editor-1.1.0-x64.dmg
+              Carino-DICOM-Editor-1.1.0-arm64.dmg
+              Carino-DICOM-Editor-1.1.0-x64.zip
+              Carino-DICOM-Editor-1.1.0-arm64.zip
           - os: windows-latest
             expect: |
-              Carino-DICOM-Editor-Setup-1.0.2.exe
+              Carino-DICOM-Editor-Setup-1.1.0.exe
     runs-on: ${{ matrix.os }}
 
     steps:

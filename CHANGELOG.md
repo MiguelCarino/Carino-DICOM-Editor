@@ -5,7 +5,13 @@ Licensed under **AGPL-3.0-or-later** (see [LICENSE](LICENSE)).
 
 ## [Unreleased]
 
+## [1.1.0] — 2026-10-16
+
 ### Added
+- **🖨 Comparison report** in the compare bar. Prints (or saves as PDF) both pictures, a
+  summary of how many tags differ, appear on one side only or match, the key identity rows of
+  each file, and every differing, one-sided and matching tag with both values. It covers the
+  whole of both files (sequences included, unsaved edits applied), not the table's filters.
 - **Create → Eye photo**, for fundus, slit-lamp and external eye pictures that a camera saved
   as JPEG or PNG. Writes Ophthalmic Photography 8 Bit Image Storage
   (`1.2.840.10008.5.1.4.1.1.77.1.5.1`, Modality `OP`, PS3.3 A.41) with the Ophthalmic Photography
@@ -65,6 +71,10 @@ Licensed under **AGPL-3.0-or-later** (see [LICENSE](LICENSE)).
 - `tests/suites/ocr.js`, not in `#selftest` (it would download the engine). It runs on the
   real clock through the new `tests/realtime.py`, which `run.sh` uses for any suite marked
   `@realtime`: the virtual-time budget does not wait for a Web Worker.
+
+### Changed
+- **The Edit toolbar is grouped and a size smaller**, so it fits one row at 1440 px: undo/redo
+  and Anonymize/Options are joined, and JSON, CSV and Print sit under one **Export ▾** menu.
 
 ### Fixed
 - **AppImage dock icon on GNOME Wayland.** GNOME on Wayland takes the dock icon only
