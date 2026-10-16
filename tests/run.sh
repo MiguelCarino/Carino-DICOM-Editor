@@ -72,15 +72,24 @@ head, sep, tail = html.rpartition('</body>')
 open(runfile, 'w').write(head + inject + sep + tail)
 PY
 
-    dom=$("$CHROME" --headless --disable-gpu --no-sandbox \
-          --virtual-time-budget="$BUDGET" --dump-dom "http://127.0.0.1:$PORT/$RUNFILE" 2>/dev/null)
+    # A suite marked '@realtime' in its first lines waits on a Web Worker, which the
+    # virtual clock does not wait for; tests/realtime.py drives it on the real clock
+    # (and checks that no request, the workers' included, leaves the origin).
+    if head -5 "$src" | grep -q '@realtime'; then
+        results=$(python3 tests/realtime.py "$CHROME" "http://127.0.0.1:$PORT/$RUNFILE" "${REALTIME_TIMEOUT:-180}")
+        dom=""
+        case "$results" in BOOTERR:*) dom="<pre id=\"BOOTERR\">${results#BOOTERR:}</pre>"; results="" ;; esac
+    else
+        dom=$("$CHROME" --headless --disable-gpu --no-sandbox \
+              --virtual-time-budget="$BUDGET" --dump-dom "http://127.0.0.1:$PORT/$RUNFILE" 2>/dev/null)
 
-    results=$(printf '%s' "$dom" | python3 -c '
+        results=$(printf '%s' "$dom" | python3 -c '
 import sys, re, html
 dom = sys.stdin.read()
 m = re.search(r"<pre id=\"TESTOUT\">(.*?)</pre>", dom, re.S)
 print(html.unescape(m.group(1)).strip() if m else "")
 ')
+    fi
 
     if [ -z "$results" ]; then
         boot=$(printf '%s' "$dom" | python3 -c '

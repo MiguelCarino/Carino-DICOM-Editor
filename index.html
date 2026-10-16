@@ -842,6 +842,14 @@
       <div class="redact-hint" data-i18n>Drag a box over any burned-in text. Drag a box to move it; double-click to delete it.</div>
       <div class="redact-hint" data-i18n>Redaction covers every frame of this image.</div>
       <div class="redact-hint" data-i18n>Redaction cannot be undone once the file is exported.</div>
+      <!-- On-device OCR (js/ocr.js) proposes boxes; Apply below is still the only pixel write. -->
+      <div class="redact-row redact-find-row">
+        <button class="redact-btn" id="redactFind" data-i18n>Find burned-in text</button>
+        <button class="redact-btn hidden" id="redactFindStop" data-i18n>Stop</button>
+        <span class="redact-find-status" id="redactFindStatus" role="status" aria-live="polite"></span>
+      </div>
+      <div class="redact-hint" data-i18n>Find burned-in text reads every frame on this device; nothing is uploaded. It can miss text, so check the whole image before you apply.</div>
+      <div class="redact-hint" data-i18n>Text that matches this patient (name, ID, dates, accession) is selected in red. Other text, such as measurements and markers, is outlined in yellow and left alone. Click a box to select or unselect it.</div>
       <div class="redact-row">
         <label for="redactFill" data-i18n>Fill</label>
         <select class="redact-sel" id="redactFill">
@@ -877,6 +885,7 @@
 <script src="js/extractor.js"></script>
 <script src="js/create.js"></script>
 <script src="js/features.js"></script>
+<script src="js/ocr.js"></script>
 <script src="js/validator.js"></script>
 <script src="js/selftest.js"></script>
 <script src="js/deeplink.js"></script>

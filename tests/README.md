@@ -10,6 +10,14 @@ Needs `python3` and a headless Chromium (`chromium-browser` by default; override
 with `CHROME=...`). `PORT` (default 8734) and `BUDGET` (virtual-time budget in ms,
 default 60000) can also be overridden. No npm, no build step.
 
+A suite with `@realtime` in its first five lines (only `ocr`) is not dumped after a
+virtual-time budget: the virtual clock does not wait for Web Workers and would dump the page
+before the OCR engine had loaded. `run.sh` hands it to `tests/realtime.py`, which drives the
+same page over the DevTools protocol on `--remote-debugging-pipe` (no npm, no websocket
+library), polls for the results for up to `REALTIME_TIMEOUT` seconds (default 180), and
+appends one assertion of its own: every request the page and its workers made stayed on the
+test server's origin.
+
 `run.sh` serves the repo over a throwaway `python3 -m http.server` (not `file://`,
 which hides script errors and blocks dcmjs), injects `tests/dicom-forge.js` plus
 one suite into a copy of `index.html` (`.testrun.html` in the repo root, so
@@ -73,6 +81,7 @@ byte-for-byte deterministic (fixed UIDs, no `Math.random`).
 | `swap` | Swap patients via the real button and dialog: group 0010 moves whole, acquisition and pixels stay, Accession opt-in, new UIDs keep each study whole, warnings, exported bytes read back. |
 | `eyephoto` | Create → Eye photo: OP 8 Bit SOP class and modules, laterality picker and filename detection, no file until every photo has an eye, camera JPEG encapsulated byte for byte (read back independently of dcmjs), PNG/rotated JPEG stored as RGB, the app's parser, decoder and validator on the result, the `#create` and bridge prefill. |
 | `redact` | Burned-in pixel redaction per photometric/codec, in memory and in the exported file; screen-to-image mapping; codec refusals. |
+| `ocr` | Find burned-in text: the matcher on hand-written OCR output (confusions, separators, date spellings, word boundaries), box merging, then the real engine on a forged two-frame image (name, ID, birth date, a frame-2-only accession, a measurement): PHI boxes cover the drawn pixels and are selected, the measurement is outlined and not, Stop adds nothing, Apply blacks out the selected text on both frames and leaves the measurement, the non-SIMD core works, the engine loads only on Find, and nothing leaves the origin. Real clock (`@realtime`); not in `#selftest`. |
 | `samples` | Demo samples decode to their references, are deterministic, and pass the Conformance card cleanly. |
 | `zip` | Download All / Extract produce one ZIP holding every file, checked by an independent reader; 32-bit limits refused. |
 | `selftest` | The `#selftest` report's summariser, attribution and suite list (does not run the other suites). |
@@ -86,7 +95,8 @@ because suites reach app globals like `DicomMessage` and `files` that are
 `const` bindings visible only to classic scripts on the same page.
 
 A browser cannot list a directory, so **`SELFTEST_SUITES` in `js/selftest.js`
-must name every file in `tests/suites/` except `selftest` itself.** The
+must name every file in `tests/suites/` except `selftest` itself and the ones in
+`SELFTEST_SKIPPED`.** The
 `selftest` suite checks this whenever the server exposes a directory index (as
 `run.sh`'s does).
 
@@ -109,7 +119,8 @@ must name every file in `tests/suites/` except `selftest` itself.** The
    from one of them): when `!window.SELFTEST`, run on `load` and write the lines
    into `<pre id="TESTOUT">`, which is what `run.sh` scrapes.
 2. Add `<name>` to `SELFTEST_SUITES` in `js/selftest.js` (order there is
-   parse → decode → display → edit → export).
+   parse → decode → display → edit → export), or to `SELFTEST_SKIPPED` with the reason
+   a visitor's browser should not run it.
 3. Rules:
    - **Leave the app as you found it** (search box, stubbed globals, dialogs).
      `run.sh` gives each suite a fresh page; `#selftest` runs them all in one.

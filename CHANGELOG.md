@@ -33,6 +33,28 @@ Licensed under **AGPL-3.0-or-later** (see [LICENSE](LICENSE)).
   Laterality R, L or B only (a missing or `U` laterality is an error). A sequence with items now
   counts as having a value.
 - Covered by `tests/suites/eyephoto.js`, also in `#selftest`.
+- **Find burned-in text**, in the redaction view. Reads every frame of the file with OCR on
+  this machine (Tesseract.js 7.0.0 and the tessdata_fast English model, vendored in
+  `vendor/tesseract/` and loaded only when the button is pressed; nothing is uploaded, and
+  no request leaves the page's origin). Each frame is read twice, its brightest pixels alone
+  (consoles burn text at full white) and as shown, after upscaling small frames up to 3x. Words that match the
+  file's own identifying attributes (Patient Name, Patient ID, Other Patient IDs and the
+  Other Patient IDs Sequence, Birth Date, Accession Number, Institution Name, Referring
+  Physician, Operators' Name, and the study, series, acquisition and content dates and
+  times; PS3.15 Table E.1-1) are proposed and selected. Matching folds case, accents,
+  separators and the common OCR confusions, knows day-first, month-first, two-digit-year and
+  month-name dates, and lets values of 7+ characters differ by one character. Other text
+  (measurements, markers, scales) is outlined and left unselected. Overlapping reads and
+  neighbouring words are merged and padded. A click switches a box; Stop cancels the run.
+  Apply is the existing redaction, with its retagging and undo. The copy says it runs on
+  this device and can miss text, and says when a file is already de-identified (Patient
+  Identity Removed = YES), since its tags then hold nothing to match.
+- **Size.** `vendor/` grows by 8.1 MB (1.7 MB to 9.8 MB) on disk and in the desktop app's
+  `resources/web/`; about +4.2 MB gzip-compressed or +2.9 MB xz-compressed in an installer.
+  A first Find downloads about 3.1 MB (engine and model, gzip on the wire).
+- `tests/suites/ocr.js`, not in `#selftest` (it would download the engine). It runs on the
+  real clock through the new `tests/realtime.py`, which `run.sh` uses for any suite marked
+  `@realtime`: the virtual-time budget does not wait for a Web Worker.
 
 ### Fixed
 - **AppImage dock icon on GNOME Wayland.** GNOME on Wayland takes the dock icon only

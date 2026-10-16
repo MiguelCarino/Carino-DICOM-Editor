@@ -124,12 +124,31 @@ fills **every frame** with the darkest value for the photometric interpretation.
 Compressed images are decompressed first. Afterwards Burned In Annotation is set to
 `NO` and the Clean Pixel Data option is recorded.
 
+**Find burned-in text** in that view reads every frame with OCR on your own machine. Nothing
+is uploaded: the engine ([Tesseract.js](https://github.com/naptha/tesseract.js) and its
+English model, ~8 MB in [`vendor/tesseract/`](vendor/tesseract/)) loads only when you press
+the button. Text that matches the file's own patient details is proposed and selected:
+Patient Name, Patient ID and Other Patient IDs, Birth Date, Accession Number, Institution
+Name, Referring Physician, Operators' Name, and the study, series, acquisition and content
+dates and times. Matching ignores case, separators and accents, accepts the usual OCR
+mix-ups (O/0, I/l/1, S/5, B/8) and, for longer values, one wrong character, so
+`14.03.1960`, `03/14/1960` and `14 MAR 1960` all match a Birth Date of `19600314`. Other
+text, such as measurements, L/R markers and scales, is outlined but not selected, because
+blanking it would destroy information the image still needs. Click a box to switch it,
+then **Apply redaction** as usual: it is the same pixel write and the same undo.
+
 ![Redaction view on the burned-in text sample, with a box over the patient name](docs/screenshots/redact.webp)
 
 **Limitations:**
 
 - No decoder for HTJ2K or MPEG/H.264, so those files are refused.
 - 12-bit JPEG Extended decodes at 8 bits, so redacting one loses depth.
+- **Find burned-in text can miss text**: very small or low-contrast text, text on busy
+  anatomy, vertical or curved text, and non-Latin scripts (only the English model is
+  shipped; accented Latin names still match). It only recognises the identity this file's
+  own tags carry, so a name that is not in the tags is not selected, and after **Anonymize**
+  there is nothing left to match (the view says so). Find before you anonymize, and always
+  look over the whole image before you apply.
 - Overlays, ultrasound regions and graphic annotations do not move when the image is
   rotated. The confirm dialog warns about this.
 - NEMA revises the action table over time. Regenerate it before production use (see
@@ -167,10 +186,13 @@ macOS, Windows and Linux are on the
 The suites run against the real `index.html` in headless Chromium, with nothing mocked.
 [`tests/dicom-forge.js`](tests/dicom-forge.js) writes the test files byte by byte and
 works out what each one should look like. The sample buttons load this file too, so keep
-`tests/` when you deploy. [`tests/README.md`](tests/README.md) has the details.
+`tests/` when you deploy. [`tests/README.md`](tests/README.md) has the details. The `ocr`
+suite waits on a Web Worker, so `run.sh` runs it on the real clock through
+[`tests/realtime.py`](tests/realtime.py) (Python standard library only), which also fails
+the run if any request, the worker's included, leaves the page's origin.
 
 **[dcm.carino.systems/#selftest](https://dcm.carino.systems/#selftest)** runs the same
-suites in your own browser. It shows which transfer syntaxes decoded correctly, and
+suites in your own browser, except `ocr`, which would download the OCR engine. It shows which transfer syntaxes decoded correctly, and
 **Copy report** copies the results for a bug report.
 
 ![Browser self-test: 18 of 18 encodings decoded correctly, with a row per transfer syntax](docs/screenshots/selftest.webp)

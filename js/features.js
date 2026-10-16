@@ -498,14 +498,24 @@ function redactDraw() {
   const ctx = fullscreenCanvas.getContext('2d');
   ctx.putImageData(redactUI.base, 0, 0);
   const live = redactUI.drag && redactUI.drag.mode === 'new' ? [redactUI.drag.box] : [];
-  ctx.lineWidth = Math.max(1, fullscreenCanvas.width / 300);
+  const lw = Math.max(1, fullscreenCanvas.width / 300);
+  ctx.lineWidth = lw;
   for (const b of redactUI.boxes.concat(live)) {
-    ctx.fillStyle = 'rgba(220, 38, 38, .35)';
-    ctx.fillRect(b.x, b.y, b.w, b.h);
-    ctx.strokeStyle = '#ef4444';
+    // Found text left unselected (b.on === false) is outlined only: it will not be filled.
+    const off = b.on === false;
+    ctx.setLineDash(off ? [lw * 3, lw * 2] : []);
+    if (!off) {
+      ctx.fillStyle = 'rgba(220, 38, 38, .35)';
+      ctx.fillRect(b.x, b.y, b.w, b.h);
+    }
+    ctx.strokeStyle = off ? '#eab308' : '#ef4444';
     ctx.strokeRect(b.x, b.y, b.w, b.h);
   }
+  ctx.setLineDash([]);
 }
+
+// What Apply will fill: drawn boxes, plus found text the user left selected.
+const redactSelected = () => redactUI.boxes.filter(b => b.on !== false);
 
 function redactPointToImage(clientX, clientY, box) {
   const c = fullscreenCanvas;
@@ -539,7 +549,7 @@ function redactBoxAt(pt) {
 
 function redactUpdateCount() {
   const el = $('redactCount');
-  if (el) el.textContent = String(redactUI.boxes.length);
+  if (el) el.textContent = String(redactSelected().length);
 }
 
 function openRedactWorkspace() {
@@ -554,6 +564,7 @@ function openRedactWorkspace() {
   redactUI.drag = null;
   redactUI.boxes = [];
   redactUI.metrics = null;
+  if (typeof ocrResetWorkspace === 'function') ocrResetWorkspace();
   // Background is the previewed frame; redaction still applies to every frame.
   redactUI.base = previewImageData.data;
   fullscreenCanvas.width  = previewImageData.width;
@@ -567,6 +578,7 @@ function openRedactWorkspace() {
 }
 
 function closeRedactWorkspace() {
+  if (typeof ocrResetWorkspace === 'function') ocrResetWorkspace();
   redactUI.active = false;
   redactUI.drag = null;
   redactUI.boxes = [];
@@ -600,7 +612,7 @@ fullscreenCanvas.addEventListener('pointerdown', e => {
   redactUI.metrics = metrics;
   const hit = redactBoxAt(pt);
   redactUI.drag = hit
-    ? { mode: 'move', box: hit, dx: pt.x - hit.x, dy: pt.y - hit.y }
+    ? { mode: 'move', box: hit, dx: pt.x - hit.x, dy: pt.y - hit.y, cx: e.clientX, cy: e.clientY }
     : { mode: 'new', box: { x: pt.x, y: pt.y, w: 0, h: 0 }, ox: pt.x, oy: pt.y };
   try { fullscreenCanvas.setPointerCapture(e.pointerId); } catch (_) {}
 });
@@ -618,7 +630,7 @@ fullscreenCanvas.addEventListener('pointermove', e => {
   redactClamp(dr.box);
   redactDraw();
 });
-const endRedactDrag = () => {
+const endRedactDrag = (e) => {
   const dr = redactUI.drag;
   redactUI.drag = null;
   if (!dr) return;
@@ -626,6 +638,9 @@ const endRedactDrag = () => {
   if (dr.mode === 'new') {
     const box = redactClamp(dr.box);
     if (box.w >= MIN_BOX && box.h >= MIN_BOX) redactUI.boxes.push(box);
+  } else if (dr.box.ocr && e?.type === 'pointerup' && Math.hypot(e.clientX - dr.cx, e.clientY - dr.cy) < 4) {
+    // A click (not a drag) on found text selects or unselects it.
+    dr.box.on = dr.box.on === false;
   }
   redactUpdateCount(); redactDraw();
 };
@@ -648,10 +663,10 @@ document.addEventListener('keydown', e => {
 $('redactApply')?.addEventListener('click', () => {
   const entry = files[currentFileIdx];
   if (!entry) return;
-  if (!redactUI.boxes.length) { toast(T('Draw at least one box first.')); return; }
+  if (!redactSelected().length) { toast(T('Draw at least one box first.')); return; }
   const sup = redactionSupport(entry.meta);
   // Copy now: closeRedactWorkspace() empties the array while applyRedaction is async.
-  const boxes = redactUI.boxes.map(b => ({ ...b }));
+  const boxes = redactSelected().map(({ x, y, w, h }) => ({ x, y, w, h }));
   const go = async () => {
     if (sup.depthLoss) {
       log(`⚠ ${T('This image was compressed with lossy JPEG; redacting it will store 8 bits per sample.')}`);

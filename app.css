@@ -937,6 +937,9 @@
     .redact-btn.danger:hover { background: var(--err); border-color: var(--err); color: var(--on-accent); }
     .redact-count { margin-left: auto; font: 500 11px var(--font); color: var(--text-muted); }
     .redact-count b { color: var(--text); font-family: var(--mono); }
+    .redact-find-row { margin: 4px 0 8px; }
+    .redact-btn:disabled { opacity: 0.5; cursor: progress; }
+    .redact-find-status { font: 500 11px var(--font); color: var(--text); flex: 1 1 220px; min-width: 0; }
     
     /* ---- Compare panel ---- */
     .compare-legend {

@@ -58,6 +58,61 @@ distribution as part of a Larger Work under a Secondary License, and the GNU
 AGPL v3 is named as a Secondary License in §1.13. The MPL still governs those
 files themselves, which is why the full text is here rather than summarised.
 
+### OCR, for Find burned-in text
+
+Everything under `tesseract/` is loaded only when someone presses **Find burned-in text** in
+the redaction view (`js/ocr.js`), never at page load. Licence texts sit beside the files.
+
+| File | Package | Version | Licence | Text |
+| --- | --- | --- | --- | --- |
+| `tesseract/tesseract.min.js`, `tesseract/worker.min.js` | [tesseract.js](https://github.com/naptha/tesseract.js) | 7.0.0 | Apache-2.0 | `tesseract/LICENSE-tesseract-js.txt` |
+| `tesseract/tesseract-core-simd-lstm.js` + `.wasm` | [tesseract.js-core](https://github.com/naptha/tesseract.js-core) | 7.0.0 | Apache-2.0 | `tesseract/LICENSE-tesseract-js-core.txt` |
+| `tesseract/tesseract-core-lstm.js` + `.wasm` | [tesseract.js-core](https://github.com/naptha/tesseract.js-core) | 7.0.0 | Apache-2.0 | `tesseract/LICENSE-tesseract-js-core.txt` |
+| `tesseract/eng.traineddata.gz` | [tessdata_fast](https://github.com/tesseract-ocr/tessdata_fast) `eng.traineddata`, last changed in commit `923915d4` (2017-09-14), fetched at `87416418` | 4.0.0 fast | Apache-2.0 | `tesseract/LICENSE-tessdata-fast.txt` |
+
+The two bundles carry webpack's extracted notices for what they compile in
+(regenerator-runtime and buffer, MIT; ieee754, BSD-3-Clause; zlib.js, MIT) in
+`tesseract/tesseract.min.js.LICENSE.txt` and `tesseract/worker.min.js.LICENSE.txt`, the
+files their first line points to. The `.wasm` files are the Tesseract engine (Apache-2.0,
+`tesseract/LICENSE-tesseract.txt`) compiled together with the libraries below, each pinned
+by tesseract.js-core v7.0.0 as a submodule. All of their notices are in
+`tesseract/LICENSE-tesseract-core-libs.txt`, one section each, taken from the pinned commit:
+
+| Compiled inside both `.wasm` | Licence |
+| --- | --- |
+| [Leptonica](https://github.com/DanBloomberg/leptonica) | BSD 2-Clause |
+| [zlib](https://github.com/madler/zlib) | zlib |
+| [libpng](https://github.com/glennrp/libpng) | libpng / PNG Reference Library licence |
+| [libjpeg](https://github.com/LuaDist/libjpeg) (IJG 9a) | IJG |
+| [libtiff](https://gitlab.com/libtiff/libtiff) | libtiff (BSD style) |
+| [libwebp](https://github.com/webmproject/libwebp) | BSD 3-Clause |
+| [giflib](https://github.com/mirrorer/giflib) | MIT |
+| [OpenLibm](https://github.com/JuliaMath/openlibm) | MIT, BSD and ISC by file, some public domain (the LGPL test files are not built in) |
+
+What was left out, and why, because each is the obvious thing to add back:
+
+* **Two cores, not six.** Only the LSTM builds (the model is LSTM-only, OEM 1), with SIMD and
+  without. The relaxed-SIMD build is dropped, so `js/ocr.js` chooses the core file itself:
+  given a directory, the worker would pick relaxed SIMD in any current Chrome and request a
+  file that is not here.
+* **`.js` + `.wasm`, not upstream's single `.wasm.js`.** That one inlines the module as
+  base64, about 1 MB more per core. The loader finds the `.wasm` beside itself.
+* **tessdata_fast, not the 10.9 MB `best` model Carino Media ships.** 1.9 MB gzipped, and
+  burned-in overlays are clean machine-drawn text. Gzipped with `gzip -9 -n` (no name, no
+  timestamp), so a refresh is reproducible; the worker unzips it. No Spanish or Portuguese
+  model: matching folds accents away on the tag side, so `Muñoz` still meets an English
+  read of `MUNOZ`, and each extra model is about 2 MB.
+
+**The off-origin rule, for these bundles specifically.** `tesseract.min.js` and
+`worker.min.js` contain three jsDelivr URLs: the defaults for `workerPath`, `corePath` and
+`langPath`. They are dead strings only while all three options are passed, which is why
+`js/ocr.js` always passes all three (and `corePath` as a file, which skips the worker's own
+lookup). Leave them unpatched, so a refresh stays a byte-for-byte copy of npm, and keep
+the options. `tests/suites/ocr.js` runs under `tests/realtime.py`, which records every
+request the page and the OCR worker make and fails if one leaves the origin. Both bundles
+end in a relative `//# sourceMappingURL=`; the maps are not shipped, so that is a
+same-origin 404 at worst. `cacheMethod: 'none'` keeps the model out of IndexedDB.
+
 The self-hosted web fonts under `../fonts/` are SIL Open Font License 1.1 and
 carry their licences beside them — `../fonts/LICENSE-IBMPlex.txt` (IBM Plex Sans
 and IBM Plex Mono) and `../fonts/LICENSE-RedHat.txt` (Red Hat Text and Red Hat
@@ -82,6 +137,29 @@ going stale against the code is the failure mode this table exists to prevent:
     tar xzf cornerstonejs-codec-charls-<version>.tgz
     cp package/dist/charlswasm_decode.js package/dist/charlswasm_decode.wasm .
     cp package/LICENSE LICENSE-codec-charls.txt
+
+OCR, from the same tarballs and the same commits the tables above name:
+
+    npm pack tesseract.js@<version>
+    tar xzf tesseract.js-<version>.tgz
+    cp package/dist/tesseract.min.js package/dist/tesseract.min.js.LICENSE.txt \
+       package/dist/worker.min.js package/dist/worker.min.js.LICENSE.txt tesseract/
+    cp package/LICENSE.md tesseract/LICENSE-tesseract-js.txt
+
+    npm pack tesseract.js-core@<version>
+    tar xzf tesseract.js-core-<version>.tgz
+    cp package/tesseract-core-simd-lstm.js package/tesseract-core-simd-lstm.wasm \
+       package/tesseract-core-lstm.js package/tesseract-core-lstm.wasm tesseract/
+    cp package/LICENSE tesseract/LICENSE-tesseract-js-core.txt
+
+    curl -LO https://github.com/tesseract-ocr/tessdata_fast/raw/main/eng.traineddata
+    gzip -9 -n eng.traineddata && mv eng.traineddata.gz tesseract/
+    curl -o tesseract/LICENSE-tessdata-fast.txt https://raw.githubusercontent.com/tesseract-ocr/tessdata_fast/main/LICENSE
+
+For a new tesseract.js-core, rebuild `tesseract/LICENSE-tesseract-core-libs.txt` from the
+`third_party/` submodule commits that tag pins (`gh api
+repos/naptha/tesseract.js-core/contents/third_party?ref=v<version>`), and check that the
+worker still accepts a `corePath` ending in `.js`.
 
 The two BSD texts are not in those tarballs and have to be taken from upstream
 in the same breath, or the binaries ship without the notice their licences
