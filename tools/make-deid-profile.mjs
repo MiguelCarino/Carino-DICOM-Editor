@@ -1,7 +1,11 @@
 // Regenerates ../deid-profile.js. Run from the repo root:
 //
-//   curl -sL https://raw.githubusercontent.com/innolitics/dicom-standard/master/standard/confidentiality_profile_attributes.json -o /tmp/conf.json
-//   node tools/make-deid-profile.mjs /tmp/conf.json deid-profile.js > /tmp/new.js && mv /tmp/new.js deid-profile.js
+//   mkdir -p ~/.cache/deid
+//   curl -sL https://raw.githubusercontent.com/innolitics/dicom-standard/master/standard/confidentiality_profile_attributes.json -o ~/.cache/deid/conf.json
+//   node tools/make-deid-profile.mjs ~/.cache/deid/conf.json deid-profile.js > ~/.cache/deid/new.js && mv ~/.cache/deid/new.js deid-profile.js
+//
+// An input of `[]` (no upstream rows) regenerates the file from itself plus the
+// hand-maintained rows below, which is how a hand row is added without a download.
 //
 // TWO INPUTS, and the second one is not optional. Innolitics is the only
 // machine-readable source for the OPTIONAL profile columns, and it is the reason
@@ -12,8 +16,8 @@
 // code sequences and two SR observer names. Thirty-five of them are X. Nothing
 // failed; Anonymize simply stopped removing them.
 //
-// So the existing file is read back in as the authority on the Basic Profile,
-// and Innolitics may only ADD to it. A row it does not have survives. A row it
+// So the existing file is read back in as the authority on the Basic Profile AND
+// on the option columns, and Innolitics may only ADD to them. A row it does not have survives. A row it
 // disagrees with is reported and the existing action wins. That makes a
 // regeneration monotonic: this table can gain attributes and can never lose one.
 //
@@ -33,6 +37,7 @@ const prevSrc = readFileSync(process.argv[3], 'utf8');
 const prevWin = {};
 new Function('window', prevSrc)(prevWin);
 const PREV = prevWin.DEID_PROFILE || {};
+const PREV_OPTS = prevWin.DEID_OPTIONS || {};
 if (Object.keys(PREV).length < 100) {
   console.error(`refusing to regenerate: ${process.argv[3]} yielded only ${Object.keys(PREV).length} attributes`);
   process.exit(2);
@@ -65,22 +70,43 @@ for (const r of rows) {
   if (!merged.has(id)) { merged.set(id, r.basicProfile); added.push(id); continue; }
   if (merged.get(id) !== r.basicProfile) disagreed.push(`${id}: keeping ${merged.get(id)}, upstream says ${r.basicProfile}`);
 }
-// (0002,0013) Implementation Version Name is not in Table E.1-1 — it is file-meta,
-// not a dataset attribute — but it names the software that produced the object and
-// so is worth replacing. Hand-added; a regeneration that drops it changes behaviour.
-if (!merged.has('00020013')) merged.set('00020013', 'D');
+// Rows of the current NEMA Table E.1-1 (checked against PS3.15 2026d) that the
+// Innolitics extract lacks. Hand-maintained until the generator reads NEMA itself.
+const HAND_BASIC = {
+  '3004007F': 'X',          // Dose Calculation Model Name (Clean Descriptors: C)
+};
+const HAND_OPTS = {
+  rtnDevIdOpt:         { '00181010': 'K', '00181011': 'K' },
+  rtnPatCharsOpt:      { '00100043': 'K', '00100046': 'K', '00100047': 'K', '00102161': 'K', '00102162': 'K' },
+  rtnLongFullDatesOpt: { '0040A034': 'K', '0040A035': 'K', '0040B034': 'K', '0040B036': 'K' },
+  rtnUIDsOpt:          { '300A0054': 'K' },
+  cleanDescOpt:        { '3004007F': 'C' },
+};
+// Not Table E.1-1 attributes. (0002,0013) was once hand-added here, but the profile is
+// applied to the dataset only, so the row never acted; export now writes this tool's own
+// Implementation Class UID / Version Name instead (ensureMeta in js/render.js).
+const DROP = ['00020013'];
+for (const [id, a] of Object.entries(HAND_BASIC)) if (!merged.has(id)) { merged.set(id, a); added.push(id); }
+for (const id of DROP) merged.delete(id);
 
+// How many rows of this table the upstream extract lacks (the figure the header used to hard-code).
 const missingUpstream = [...merged.keys()].filter(id => !rows.some(r => HEX.test(r.id) && r.id.toUpperCase() === id));
 console.error(`base: ${Object.keys(PREV).length} kept, ${added.length} added by upstream, ${merged.size} total`);
 if (added.length) console.error(`  added: ${added.join(' ')}`);
-if (missingUpstream.length) console.error(`  upstream does not carry (kept anyway): ${missingUpstream.length} — ${missingUpstream.join(' ')}`);
+if (rows.length && missingUpstream.length) console.error(`  upstream does not carry (kept anyway): ${missingUpstream.length} — ${missingUpstream.join(' ')}`);
 if (disagreed.length) console.error(`  DISAGREEMENTS, existing action wins:\n    ${disagreed.join('\n    ')}`);
 
 const basic = [...merged.entries()];
 basic.sort((a, b) => a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0);
 
+// Same merge-never-lose rule for the option columns: the existing file's cells survive,
+// upstream and the hand rows may add.
 const optMaps = OPTS.map(o => {
-  const rs = rows.filter(r => HEX.test(r.id) && r[o]).map(r => [r.id.toUpperCase(), r[o]]);
+  const m = new Map(Object.entries(PREV_OPTS[o] || {}));
+  for (const r of rows) if (HEX.test(r.id) && r[o] && !m.has(r.id.toUpperCase())) m.set(r.id.toUpperCase(), r[o]);
+  for (const [id, v] of Object.entries(HAND_OPTS[o] || {})) if (!m.has(id)) m.set(id, v);
+  for (const id of DROP) m.delete(id);
+  const rs = [...m.entries()];
   rs.sort((a, b) => a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0);
   return [o, rs];
 });
@@ -92,22 +118,26 @@ let out = `/* ==================================================================
    with the optional profiles that share the table.
    DO NOT hand-edit; regenerate with tools/make-deid-profile.mjs.
 
-   The Basic Profile column is Annex E as published (2026c). The optional-profile
-   columns come from the Innolitics dicom-standard machine-readable extract,
-   which tracks an older edition and is short 38 of these attributes — so the
-   generator merges rather than replaces, and the table can only ever grow. See
-   the note at the top of tools/make-deid-profile.mjs for what was lost the one
-   time it did replace.
+   The Basic Profile column is Annex E as published (2026c, plus the 2026d row
+   (3004,007F) added by hand). The optional-profile columns come from the
+   Innolitics dicom-standard machine-readable extract, which tracks an older
+   edition and lacks some of these attributes (the generator reports how many),
+   so the generator merges rather than replaces, for every column, and the table
+   can only ever grow. See the note at the top of tools/make-deid-profile.mjs for
+   what was lost the one time it did replace.
 
    window.DEID_PROFILE maps a tag id (8-char UPPERCASE hex, no group/element
    punctuation) to its Basic Profile action code:
      X       remove the attribute entirely
      Z       replace with a zero-length (empty) value
-     D       replace with a non-zero dummy value
+     D       replace with a non-zero dummy value consistent with the VR (this
+             tool: text 'ANONYMIZED', PN 'ANON^ANON', AS '000Y', UI a fresh UID,
+             DA 19000101 / TM 000000 / DT 19000101000000; numeric, binary and
+             SQ values collapse to Z: zero-length, a sequence with no items)
      U       replace UID with an internally-consistent remapped UID
      Z/D     Z or D  (this tool: Z / empty)
      X/Z     X or Z  (this tool: Z / empty — never drops a maybe-required attr)
-     X/D     X or D  (this tool: D / dummy)
+     X/D     X or D  (this tool: zero-length for DA/DT/TM, else as D)
      X/Z/D   any of the three (this tool: Z / empty)
      X/Z/U*  keep & recurse so nested UIDs get remapped (preserves references)
 

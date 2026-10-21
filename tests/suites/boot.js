@@ -108,11 +108,14 @@
     // through t(), 157 with the Swap patients dialog's rows, warnings and toast,
     // 163 with Create's eye picker and its eye-photo and order messages, 169 with
     // Find burned-in text's progress and result lines, 179 with Create's
-    // send-back-to-the-worklist label and outcomes.
+    // send-back-to-the-worklist label and outcomes, 194 with the review fixes' confirm
+    // sentences, refusals and toasts (de-identification, deep links, export), 227 with the
+    // compression line's verdicts, viewer warnings, decompress confirm and Compare's pixel verdict,
+    // 245 with the point-transform, J2K-sign, JPIP/private-syntax and rendered-copy warnings.
     const jsOwned = new Set(ATTR_I18N.map(([, , k]) => k));
     const unseen = Object.keys(I18N.es).filter(k => !keys.has(k) && !jsOwned.has(k));
     ok('the dictionaries have not drifted far ahead of the page',
-       unseen.length < 185, `${unseen.length} keys reached from JS or no longer reached at all`);
+       unseen.length < 260, `${unseen.length} keys reached from JS or no longer reached at all`);
   } catch (e) {
     ok('the i18n audit ran', false, (e && e.message) || String(e));
   }

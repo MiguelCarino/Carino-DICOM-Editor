@@ -28,6 +28,18 @@ be called `DICOM-editor`; GitHub redirects the old name.
   shows both sides first and warns when both already carry the same Patient ID.
 - **Compare, Extract, Create**: diff two files, export frames as PNG/JPEG, or build a new
   DICOM file from scratch.
+- **Compression**: the Overview and the Image edits card say how the pixels are encoded and
+  whether that lost anything, judged from the codestream (JPEG-LS `NEAR`, the JPEG 2000 wavelet),
+  the transfer syntax and `(0028,2110)`. They also warn when other viewers are likely to show the
+  same pixels differently (signed values in compressed form, a JPEG 2000 sign that disagrees with
+  Pixel Representation, no window), and when a file looks like a rendered or reduced copy (8-bit CT/MR,
+  a Secondary Capture, smaller than the rest of its series). JPEG Lossless with a point transform is
+  reported lossy; JPEG XL, JPIP (pixels on a server) and private vendor syntaxes are named. **Decompress** (one file
+  or all) rewrites the pixels as Explicit VR Little Endian with the same SOP Instance UID: exact for
+  a lossless source; a lossy source stays lossy and keeps `(0028,2110) = 01`. Compare decodes both
+  files and says whether the pixels match even when the encodings differ, lists the compression
+  facts that differ (syntax, lossless or lossy, ratio, stored size, the lossy-history tags, image
+  size, Bits Stored, SOP Class, viewer warnings), and the Comparison report prints all of them in a Pixel data & compression section.
 
 ## Eye photos
 
@@ -69,7 +81,9 @@ https://dcm.carino.systems/#create=eye&patient_name=DOE%5EJANE&patient_id=123
 ```
 
 `#create` alone opens Create; `=eye` also picks Eye photo. Values are URL-encoded. The hash is
-removed from the address bar as soon as it is read. Over the [Carino Bridge](carino-bridge.js)
+removed from the address bar as soon as it is read, but the browser has already recorded the
+visit in its own History database, so a sender should carry patient details in a bridge order
+rather than in a link. Over the [Carino Bridge](carino-bridge.js)
 the same keys travel in a file named `*.carino-create.json`,
 `{ "carinoCreate": 1, "kind": "eye", "patient_id": "123", … }`, optionally with the photos beside
 it, and nothing reaches the URL. A value too long for its DICOM field, a malformed UID, date or
@@ -114,18 +128,26 @@ these links.
 **Anonymize** follows **PS3.15 Annex E, Table E.1-1**. The rules for 656 attributes are
 in [`deid-profile.js`](deid-profile.js). It also:
 
-- cleans inside sequences, not only at the top level
-- removes private tags and curve/overlay data
-- remaps instance UIDs consistently across the loaded files, and leaves standard
-  `1.2.840.10008` UIDs alone
-- writes `(0012,0062)` Patient Identity Removed = `YES`, plus the `(0012,0063)` and
-  `(0012,0064)` method attributes
-- sets Patient's Name to `ANONYMOUS`, and keeps Sex and an age of `000Y`
+- cleans inside sequences, not only at the top level; a sequence it cannot see into
+  (stored as unknown `UN` bytes) is removed rather than exported unread
+- removes private tags, curve data and whole overlay planes
+- remaps instance UIDs consistently across the loaded files (File Meta `(0002,0003)`
+  included), and leaves standard `1.2.840.10008` UIDs and the UIDs that name a SOP
+  Class, transfer syntax or coding scheme alone
+- writes `(0012,0062)` Patient Identity Removed = `YES`, and adds its method to
+  `(0012,0063)` and `(0012,0064)` without dropping earlier ones (a redaction's Clean
+  Pixel Data stays recorded)
+- sets Patient's Name to `ANONYMOUS`. Sex is emptied and Age removed, as the table says;
+  only Retain patient characteristics keeps them
+- refuses to run if `deid-profile.js` did not load, rather than claim a profile it did
+  not apply. Anonymize ends the session's undo; exported names no longer carry the
+  source folder or file name
 
 **⚙ Options** adds five of the optional profiles: Retain UIDs, Retain device identity,
 Retain institution identity, Retain patient characteristics and Retain full dates. Only
 the attributes the standard marks **K** (keep) are kept. The other five profiles need
-free-text cleaning or date shifting, which this tool does not do, so they are not offered.
+free-text or graphics cleaning, date shifting, or a list of known-safe private
+attributes, which this tool does not do, so they are not offered.
 
 **Burned-in text.** Tag edits cannot remove text drawn into the image. **▣ Redact
 burned-in text** opens a full-screen view where you drag boxes over the text. Redaction
@@ -151,7 +173,11 @@ then **Apply redaction** as usual: it is the same pixel write and the same undo.
 
 **Limitations:**
 
-- No decoder for HTJ2K or MPEG/H.264, so those files are refused.
+- No decoder for HTJ2K or MPEG/H.264, so those files are refused. Files in a compressed transfer
+  syntax the bundled writer cannot encapsulate (HTJ2K, JPEG XL, MPEG-4, HEVC, ...) are refused
+  on export rather than written as an unreadable file.
+- A sequence written as `UN` with undefined length (PS3.5 6.2.2 Note 5) cannot be parsed by the
+  bundled dcmjs, so such a file does not load at all.
 - 12-bit JPEG Extended decodes at 8 bits, so redacting one loses depth.
 - **Find burned-in text can miss text**: very small or low-contrast text, text on busy
   anatomy, vertical or curved text, and non-Latin scripts (only the English model is

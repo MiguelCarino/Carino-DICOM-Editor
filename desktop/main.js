@@ -35,7 +35,7 @@
    ============================================================ */
 "use strict";
 
-const { app, BrowserWindow, Menu, dialog, ipcMain, protocol, shell } = require("electron");
+const { app, BrowserWindow, Menu, dialog, ipcMain, protocol, session, shell } = require("electron");
 const https = require("https");
 const path = require("path");
 const fs = require("fs");
@@ -155,8 +155,17 @@ async function serveFromBundle(request) {
   let body;
   try { body = await fs.promises.readFile(real); } catch (e) { return notFound(); }
   const type = CONTENT_TYPES[path.extname(real).toLowerCase()] || "application/octet-stream";
-  return new Response(body, { headers: { "content-type": type } });
+  const headers = { "content-type": type, "x-content-type-options": "nosniff" };
+  // A header, not only the page's <meta>: injected markup cannot remove it.
+  if (type.startsWith("text/html")) headers["content-security-policy"] = CSP;
+  return new Response(body, { headers });
 }
+
+// Same policy as index.html's meta (keep the two in step): nothing but the bundle itself.
+const CSP = "default-src 'self'; script-src 'self' 'unsafe-eval' 'wasm-unsafe-eval'; " +
+  "style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; " +
+  "connect-src 'self' blob: data:; worker-src 'self' blob:; media-src 'self' blob:; " +
+  "object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'";
 
 // ---- update check ------------------------------------------------------
 // Check-only, on purpose: no electron-updater, no download, no install, no
@@ -196,13 +205,17 @@ function loadUpdateState() {
       updates.enabled = typeof j.enabled === "boolean" ? j.enabled : null;
       updates.lastCheckMs = Number(j.lastCheckMs) || 0;
       updates.lastSeenVersion = typeof j.lastSeenVersion === "string" ? j.lastSeenVersion : null;
+      updates.lastSeenUrl = typeof j.lastSeenUrl === "string" ? j.lastSeenUrl : null;
     }
   } catch (e) { /* absent or corrupt → first run */ }
   // Seed from disk so the header can say what it said yesterday without waiting
   // for a round trip, and so a user who is already at or past that version sees
   // nothing at all.
   if (isNewer(updates.lastSeenVersion, app.getVersion())) {
-    pendingUpdate = { version: normalise(updates.lastSeenVersion), url: releaseUrlFor(updates.lastSeenVersion) };
+    // The stored page URL, re-validated: GitHub keys release pages by the literal tag
+    // ("v9.9.9"), which the normalised version ("9.9.9") is not.
+    pendingUpdate = { version: normalise(updates.lastSeenVersion),
+                      url: releaseUrlFor("v" + normalise(updates.lastSeenVersion), updates.lastSeenUrl) };
   }
 }
 
@@ -249,7 +262,8 @@ function releaseUrlFor(tag, apiUrl) {
     try {
       const u = new URL(apiUrl);
       const base = new URL(RELEASE_PREFIX);
-      if (u.origin === base.origin && u.pathname.startsWith(base.pathname)) return u.href;
+      if (u.protocol === "https:" && !u.username && !u.password &&
+          u.origin === base.origin && u.pathname.startsWith(base.pathname)) return u.href;
     } catch (e) { /* unparseable — fall through to the derived URL */ }
   }
   return RELEASE_PREFIX + "releases/tag/" + encodeURIComponent(String(tag));
@@ -260,7 +274,10 @@ function releaseUrlFor(tag, apiUrl) {
 function fetchLatestRelease() {
   return new Promise((resolve) => {
     let done = false;
-    const finish = (v) => { if (!done) { done = true; resolve(v); } };
+    // A whole-request deadline: setTimeout below is only an idle-socket timer, so a response
+    // that drips one byte every few seconds would otherwise never finish.
+    const deadline = setTimeout(() => { try { req && req.destroy(); } catch (e) {} finish(null); }, CHECK_TIMEOUT_MS);
+    const finish = (v) => { if (!done) { done = true; clearTimeout(deadline); resolve(v); } };
     let req;
     try {
       req = https.get(RELEASES_API, {
@@ -338,6 +355,7 @@ async function runCheck(manual) {
     // should stop being told about it.
     pendingUpdate = null;
     updates.lastSeenVersion = null;
+    updates.lastSeenUrl = null;
     saveUpdateState();
     if (manual) {
       dialog.showMessageBox(win || undefined, {
@@ -353,6 +371,7 @@ async function runCheck(manual) {
 
   pendingUpdate = { version: normalise(rel.tag), url: releaseUrlFor(rel.tag, rel.url) };
   updates.lastSeenVersion = pendingUpdate.version;
+  updates.lastSeenUrl = pendingUpdate.url;
   saveUpdateState();
   announceUpdate();
 
@@ -590,6 +609,11 @@ if (!app.requestSingleInstanceLock()) {
     integrateAppImage();   // not awaited: it must never hold up the window
 
     protocol.handle(SCHEME, serveFromBundle);
+    // Electron grants every permission request unless told otherwise; the page needs none of
+    // camera, microphone, geolocation or notifications, only clipboard writes and fullscreen.
+    const ALLOWED_PERMISSIONS = new Set(["clipboard-sanitized-write", "fullscreen"]);
+    session.defaultSession.setPermissionRequestHandler((wc, permission, cb) => cb(ALLOWED_PERMISSIONS.has(permission)));
+    session.defaultSession.setPermissionCheckHandler((wc, permission) => ALLOWED_PERMISSIONS.has(permission));
 
     // The page asks for the update at boot and is told again if one turns up
     // later; openReleasePage takes no argument, so the URL opened is always the

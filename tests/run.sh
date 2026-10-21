@@ -56,14 +56,14 @@ suite, runfile = sys.argv[1], sys.argv[2]
 html = open('index.html').read()
 # Record the first boot error, so a suite that never reports can say why it died
 # instead of leaving us to guess. Goes in <head>, ahead of every app script.
-probe = ('<script>window.addEventListener("error", (e) => {'
-         'if (document.getElementById("BOOTERR")) return;'
-         'const p = document.createElement("pre"); p.id = "BOOTERR";'
-         'p.textContent = e.message + " @ " + (e.filename || "").split("/").pop() + ":" + e.lineno;'
-         'document.documentElement.appendChild(p); });</script>')
+# A file, not an inline script: index.html's Content-Security-Policy forbids inline code.
+probe = '<script src="tests/boot-probe.js"></script>'
 if '</head>' not in html or '</body>' not in html:
     sys.exit('index.html is missing </head> or </body> to inject into')
-html = html.replace('</head>', probe + '</head>', 1)
+# At the top of <body>, not in <head>: boot.js asserts no parser-blocking script sits there, and
+# this still runs before every app script (they are all at the end of <body>).
+import re
+html = re.sub(r'(<body[^>]*>)', lambda m: m.group(1) + probe, html, count=1)
 inject = ('<script src="tests/dicom-forge.js"></script>\n'
           f'<script src="tests/suites/{suite}.js"></script>\n')
 # The last </body>, not the first: the print/export code builds a whole HTML
@@ -80,8 +80,16 @@ PY
         dom=""
         case "$results" in BOOTERR:*) dom="<pre id=\"BOOTERR\">${results#BOOTERR:}</pre>"; results="" ;; esac
     else
-        dom=$("$CHROME" --headless --disable-gpu --no-sandbox \
-              --virtual-time-budget="$BUDGET" --dump-dom "http://127.0.0.1:$PORT/$RUNFILE" 2>/dev/null)
+        # Headless Chromium sometimes never dumps a page whose suite has finished (virtual time
+        # stalls; seen on the folder suite before any of today's code ran). Bound each attempt
+        # and try again rather than hang the whole run.
+        dom=""
+        for attempt in 1 2 3; do
+            dom=$(timeout "${SUITE_TIMEOUT:-120}" "$CHROME" --headless --disable-gpu --no-sandbox \
+                  --virtual-time-budget="$BUDGET" --dump-dom "http://127.0.0.1:$PORT/$RUNFILE" 2>/dev/null)
+            case "$dom" in *'id="TESTOUT"'*) break ;; esac
+            [ "$attempt" -lt 3 ] && echo "   (${suite}: no result from Chromium, retrying)" >&2
+        done
 
         results=$(printf '%s' "$dom" | python3 -c '
 import sys, re, html

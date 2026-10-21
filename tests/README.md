@@ -8,7 +8,8 @@ CHROME=google-chrome ./tests/run.sh
 
 Needs `python3` and a headless Chromium (`chromium-browser` by default; override
 with `CHROME=...`). `PORT` (default 8734) and `BUDGET` (virtual-time budget in ms,
-default 60000) can also be overridden. No npm, no build step.
+default 60000) can also be overridden, as can `SUITE_TIMEOUT` (seconds one Chromium run may take, default
+120; a run that never dumps its page is retried twice). No npm, no build step.
 
 A suite with `@realtime` in its first five lines (only `ocr`) is not dumped after a
 virtual-time budget: the virtual clock does not wait for Web Workers and would dump the page
@@ -84,6 +85,7 @@ byte-for-byte deterministic (fixed UIDs, no `Math.random`).
 | `ocr` | Find burned-in text: the matcher on hand-written OCR output (confusions, separators, date spellings, word boundaries), box merging, then the real engine on a forged two-frame image (name, ID, birth date, a frame-2-only accession, a measurement): PHI boxes cover the drawn pixels and are selected, the measurement is outlined and not, Stop adds nothing, Apply blacks out the selected text on both frames and leaves the measurement, the non-SIMD core works, the engine loads only on Find, and nothing leaves the origin. Real clock (`@realtime`); not in `#selftest`. |
 | `samples` | Demo samples decode to their references, are deterministic, and pass the Conformance card cleanly. |
 | `zip` | Download All / Extract produce one ZIP holding every file, checked by an independent reader; 32-bit limits refused. |
+| `review` | Regression cases for the October 2026 review fixes: D dummies by VR, class/scheme UIDs left alone, UN sequences removed fail-closed, File Meta written as this editor, additive `(0012,006x)`, Anonymize refusing without its table, undo ending after batch rewrites, de-identified export names, Randomize one-patient-per-study, Icon Image removal on redaction, big-endian relabel, frame/fragment checks, Add Tag keys, VR parsing, SR viewer keys, validator PHI walk, W/L, ZIP name limits, OCR matching, banner XSS, CSP, `#load=` origin policy. |
 | `selftest` | The `#selftest` report's summariser, attribution and suite list (does not run the other suites). |
 
 ## In-browser self-test

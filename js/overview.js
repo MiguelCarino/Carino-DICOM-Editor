@@ -44,7 +44,9 @@
     const r = lookupTag(dict,'00280010')?.Value?.[0], c = lookupTag(dict,'00280011')?.Value?.[0];
     set('diagDims', r && c ? `${c}×${r}` : '—');
     set('diagFrames', lookupTag(dict,'00280008')?.Value?.[0] || '1');
-    set('diagTs', metaTxt('00020010') || '—');
+    const ts = metaTxt('00020010');
+    set('diagTs', ts ? (TS_COMPRESSION[ts]?.[0] || ts) : '—');
+    const tsEl = $('diagTs'); if (tsEl) tsEl.title = ts;
   };
 
   // ---- Key/value rows ----
@@ -55,7 +57,10 @@
 
   // Patient-name visibility persists across reloads.
   const PN_KEY = 'dicom-ov-show-patient';
-  const patientShown = () => localStorage.getItem(PN_KEY) === '1';
+  // Storage can throw (blocked site data, sandboxed frame); fall back to a session flag so the
+  // Overview still renders, masked by default.
+  let pnSession = false;
+  const patientShown = () => { try { return localStorage.getItem(PN_KEY) === '1'; } catch (_) { return pnSession; } };
 
   function renderCore() {
     const core = $('ovCore'); if (!core) return;
@@ -78,7 +83,12 @@
       kvRow(T('Series Description'), txt('0008103E')) +
       kvRow(T('Body Part'), txt('00180015'));
     const tgl = $('ovPnToggle');
-    if (tgl) tgl.addEventListener('click', () => { localStorage.setItem(PN_KEY, patientShown() ? '0' : '1'); renderCore(); });
+    if (tgl) tgl.addEventListener('click', () => {
+      const next = !patientShown();
+      pnSession = next;
+      try { localStorage.setItem(PN_KEY, next ? '1' : '0'); } catch (_) {}
+      renderCore();
+    });
   }
 
   // SHA-256 of the file as loaded, not the edited dataset.
@@ -92,7 +102,8 @@
       cell = `<span class="ov-kv-v">computing…</span>`;
     } else if (entry.shaState === 'deferred') {
       const mb = (entry.size / 1048576).toFixed(1);
-      cell = `<span class="ov-kv-v"><button class="ov-reveal" onclick="window.__computeSha()">Compute — ${mb} MB</button></span>`;
+      // No inline handler (the page's Content-Security-Policy forbids them); bound in renderTech.
+      cell = `<span class="ov-kv-v"><button class="ov-reveal" data-compute-sha>Compute — ${mb} MB</button></span>`;
     } else if (entry.sha) {
       const note = (typeof datasetDirty !== 'undefined' && datasetDirty)
         ? ` <span class="ov-sha-stale" title="You have edited the working copy this session. This hash is still the ORIGINAL file's — an exported/edited file will hash differently.">working copy edited</span>` : '';
@@ -103,12 +114,23 @@
     return `<div class="ov-kv-row"><span class="ov-kv-k">SHA-256 <span class="ov-kv-sub">file as loaded</span></span>${cell}</div>`;
   }
 
+  // Compression verdict, plus the viewer warnings (signed compressed pixels, no window) that
+  // explain "the same file looks worse in another viewer".
+  function compressionRows() {
+    const entry = files[currentFileIdx];
+    if (!entry || !lookupTag(dict, '7fe00010')) return '';
+    const ci = compressionInfo(entry);
+    return kvRow('Compression', compressionLabel(ci)) +
+      ci.warnings.map(w => `<div class="ov-kv-warn">⚠ ${esc(w)}</div>`).join('');
+  }
+
   function renderTech() {
     const tech = $('ovTech'); if (!tech) return;
     const r = lookupTag(dict,'00280010')?.Value?.[0], c = lookupTag(dict,'00280011')?.Value?.[0];
     tech.innerHTML =
       kvRow('SOP Instance UID', txt('00080018')) +
       kvRow('Transfer Syntax UID', metaTxt('00020010')) +
+      compressionRows() +
       kvRow('Photometric Interpretation', txt('00280004')) +
       kvRow('Image Position (Patient)', txt('00200032')) +
       kvRow('Pixel Spacing', txt('00280030')) +
@@ -117,12 +139,12 @@
       kvRow('Specific Character Set', txt('00080005')) +
       kvRow('Rows × Columns', r && c ? `${r} × ${c}` : '') +
       shaRowHtml();
+    tech.querySelector('[data-compute-sha]')?.addEventListener('click', () => window.__computeSha());
   }
   // Lets files.js refresh just this card when a hash resolves.
   window.__ovRenderTech = function () { if (dict) renderTech(); };
 
   // ---- Equipment / manufacturer ----
-  const slug = s => String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
   const PLACEHOLDER = 'data:image/svg+xml;utf8,' + encodeURIComponent(
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120"><rect width="120" height="120" fill="#060606"/><g fill="none" stroke="#333" stroke-width="3"><rect x="22" y="30" width="76" height="50" rx="4"/><circle cx="60" cy="55" r="14"/><rect x="40" y="86" width="40" height="6" rx="3"/></g><text x="60" y="108" fill="#555" font-family="monospace" font-size="9" text-anchor="middle">no image</text></svg>');
 
@@ -130,13 +152,9 @@
     const brand = txt('00080070'), model = txt('00081090'), img = $('ovMfrImg');
     $('ovMfrBrand').textContent = brand || T('Unknown manufacturer');
     $('ovMfrModel').textContent = model || '';
-    if (img) {
-      if (brand || model) {
-        const s = slug(`${brand}-${model}`) || slug(brand) || slug(model);
-        img.onerror = () => { img.onerror = null; img.src = PLACEHOLDER; };
-        img.src = `models/${s}.png`;
-      } else { img.onerror = null; img.src = PLACEHOLDER; }
-    }
+    // No per-model picture ships, and a URL built from the file's Manufacturer / Model would put
+    // the equipment of every study viewed into the host's access log. Always the placeholder.
+    if (img) { img.onerror = null; img.src = PLACEHOLDER; }
     $('ovMfrExtra').innerHTML =
       kvRow(T('Station Name'), txt('00081010')) +
       kvRow(T('Institution'), txt('00080080')) +
@@ -181,7 +199,14 @@
     if (!dict) { summary.style.display = 'none'; summary.innerHTML = ''; list.innerHTML = ''; return; }
 
     let issues = [];
-    try { issues = validateDicom(dict, meta) || []; } catch (_) { issues = []; }
+    // A validator that threw has checked nothing: never show the green badge for it.
+    try { issues = validateDicom(dict, meta) || []; }
+    catch (_) {
+      summary.style.display = '';
+      summary.innerHTML = `<div class="val-badge warning">${esc(T('Validation unavailable'))}</div>`;
+      list.innerHTML = '';
+      return;
+    }
 
     const cnt = sev => issues.filter(i => i.sev === sev).length;
     const errors = cnt('error'), warnings = cnt('warning'), phi = cnt('phi'), info = cnt('info');
