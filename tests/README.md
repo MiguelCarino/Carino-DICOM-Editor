@@ -49,7 +49,7 @@ offsets), because the reference image is still computed from first principles.
 
 The corpus covers 8/12/16-bit greyscale (signed and unsigned), MONOCHROME1,
 Hounsfield/PET rescale, missing window, RGB (both planar configs), YBR_FULL,
-YBR_FULL_422, PALETTE COLOR, multi-frame, Implicit VR LE, Explicit VR BE,
+YBR_FULL_422, PALETTE COLOR, multi-frame, pixel-less objects (`noImage`, for presentation states), Implicit VR LE, Explicit VR BE,
 baseline JPEG, JPEG Lossless, RLE, JPEG 2000, JPEG-LS, split fragments, and
 deliberately malformed or unsupported files (truncated, MPEG-2, HTJ2K, ...).
 
@@ -70,6 +70,7 @@ byte-for-byte deterministic (fixed UIDs, no `Math.random`).
 | `loading` | `handleFiles` read-ahead: bounded by count and bytes, order and per-file failure handling unchanged. A load where nothing parses keeps the open study, edits and undo history, toasts on any tab and points images at Create; the return value is the parsed count. |
 | `folder` | Folder/study drops: `DICM` sniff, entry-tree walk, `DataTransfer` snapshot, drop routing, `loadStudy` filtering (DICOMDIR, junk, large-folder prompt). Opening over unsaved work: drops and the file picker ask first, the card drop asks once, `beforeunload` holds only a dirty page, `handleFiles` never asks. |
 | `pixels` | `decodeDicomPixels()` alone: greyscale via `rawFloats` min/max, colour pixel for pixel. |
+| `presentation` | Presentation states in the Overview viewer: the menu lists the PRs that refer to the image (colour PRs listed, not choosable), a pseudo-colour PR's per-frame window and palette and a grayscale PR's INVERSE match pixels worked out from the forged values, *Image as stored* draws what it drew before. Save as colour series: one RGB Secondary Capture per covered frame in one new series, identity and references copied, pixels equal to the PR rendering, no validator errors, colour PRs and PRs without their images refused, the button saving one archive. The study checks: Series Number clash, converted copy and its source, palette on MONOCHROME2 without Pixel Presentation, PR with missing images, PR referring to an image; none without the study. |
 | `viewer` | Rendered canvases (Overview `renderOverview`, editor `drawPreview`) against the reference and each other. |
 | `render` | Tag-table rebuilds: debounced search, synchronous `renderTable`, UID-prefix scan only when data changes; UID Pattern Apply asks first, never rewrites standard `1.2.840.10008.*` UIDs and leaves no undo step that would split the study. |
 | `phone` | 390x844 in an iframe: `.app` no wider than the screen; tabs and Info on screen on every tab, Download and Search on Edit; tabs on their own row. Create not clipped in ru (longest labels) at 320, 660 and 701px. Edit at 390/360px (and 360 ru, 390 ja): every Value input on screen, Description at least 78px; at 320px the 640px table stays, Value at least 80px; compare keeps its 640px table; Redact, Open files/folder and UID Apply on screen down to 320px. |

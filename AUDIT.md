@@ -36,6 +36,8 @@ Not listed and not code to study:
 | desktop/main.js | ai | | | | CSP + nosniff headers, permission handler, update-check deadline and stored release URL. |
 | i18n.js | ai | | | | Strings for the review fixes in es / pt-BR / ja / ru. |
 | index.html | ai | | | | Content-Security-Policy meta; maxlength on Create patient fields. |
+| js/presentation.js | ai | | | | New: which loaded PR refers to which image; grayscale / pseudo-colour PR pipeline (rescale, per-frame VOI, INVERSE, palette); burn-in as an RGB Secondary Capture series. |
+| tests/suites/presentation.js | ai | | | | New: PR menu, pixel oracle for pseudo-colour and INVERSE PRs, colour-series burn-in, study checks. |
 | js/compression.js | ai | | | | New: compression detection (syntax incl. JPEG XL, fragmentable video, JPIP, retired JPEG, private; JPEG-LS NEAR, JPEG Lossless point transform, J2K wavelet and SIZ signedness, (0028,2110)), viewer warnings, rendered/reduced-copy warnings (8-bit deep modality, Secondary Capture, smaller than its series), decompress, decoded-pixel compare, Compare/report compression, size, bits and SOP Class rows. |
 | js/anonymize.js | ai | | | | Review fixes: VR-consistent D dummies, UN resolution, overlay planes, additive (0012,006x), icon stripping, big-endian relabel. |
 | js/create.js | ai | | | | Review fixes: File Meta version, SC Conversion Type, Series Number, lossy flag, EXIF date checks, prefill control/number filters. |

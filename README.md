@@ -13,7 +13,11 @@ be called `DICOM-editor`; GitHub redirects the old name.
 
 - **View**: drop a file or folder. Files are sorted by series and instance number. The
   wheel moves through the series, Ctrl/⌘+wheel zooms, and window/level stays the same as
-  you scroll. Multi-frame files play as cine.
+  you scroll. Multi-frame files play as cine. When a loaded presentation state (PR) refers
+  to the image, the viewer can show it through that PR: its window per frame, and the colour
+  map of a pseudo-colour PR (its annotations, rotation and zoom are not drawn).
+  **Save as colour series** writes what the PR draws as a new RGB Secondary Capture series of
+  the same study, for viewers that ignore presentation states.
 - **Edit tags**: every attribute in an editable table, with undo/redo and JSON/CSV
   export. The full PS3.6 dictionary is bundled, so every standard tag has a name.
 - **Edit image**: rotate, flip, invert and redact the **stored pixels**, not just the view.

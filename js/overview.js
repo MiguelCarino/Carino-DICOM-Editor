@@ -200,7 +200,7 @@
 
     let issues = [];
     // A validator that threw has checked nothing: never show the green badge for it.
-    try { issues = validateDicom(dict, meta) || []; }
+    try { issues = validateDicom(dict, meta, studyEntries()) || []; }
     catch (_) {
       summary.style.display = '';
       summary.innerHTML = `<div class="val-badge warning">${esc(T('Validation unavailable'))}</div>`;
@@ -245,6 +245,59 @@
   let loadSeq = 0;
   const view = { wc: null, ww: null, invert: false, cmap: 'gray', rotate: 0, flipH: false, flipV: false, zoom: 1, panX: 0, panY: 0, frame: 0 };
   const cine = { playing: false, timer: null, fps: 15, loop: true };
+  // Presentation states that refer to this image. sel = the chosen PR's file index (-1 = the image
+  // as stored); autoWL = take each frame's window from the PR until the user moves a slider.
+  const pres = { list: [], sel: -1, autoWL: true };
+
+  // The study as the validator and the PR lookup see it: the working copy for the open file.
+  function studyEntries() {
+    return files.map((f, i) => ({ dict: i === currentFileIdx ? dict : f.dict, meta: f.meta, name: f.name }));
+  }
+
+  // keep: hold the chosen PR if it still refers to this image (wheel paging within a series).
+  function refreshPresentations(keep) {
+    const sel = $('ovPres');
+    pres.list = presentationStatesFor(studyEntries(), txt('00080018'));
+    if (!keep || !pres.list.some(p => p.index === pres.sel && p.supported)) pres.sel = -1;
+    if (!sel) return;
+    sel.innerHTML = '';
+    const add = (value, label, disabled) => {
+      const o = document.createElement('option');
+      o.value = value; o.textContent = label; o.disabled = !!disabled;
+      sel.appendChild(o);
+    };
+    add('-1', T('Image as stored'));
+    for (const p of pres.list)
+      add(String(p.index), `${p.label} (${T(p.kind)}${p.supported ? '' : ', ' + T('not supported')})`, !p.supported);
+    sel.value = String(pres.sel);
+    sel.classList.toggle('hidden', !pres.list.length);
+    $('ovPresBurn')?.classList.toggle('hidden', pres.sel < 0);
+  }
+
+  // The chosen PR burned in as a new colour series, saved as one archive (or one file).
+  let burning = false;
+  async function burnChosenPresentation() {
+    if (burning || pres.sel < 0) return;
+    burning = true;
+    showLoading?.(true, T('Building the colour series…'), 0);
+    try {
+      const r = await burnPresentationSeries(studyEntries(), pres.sel,
+        (n, of) => showLoading?.(true, T('Building the colour series…'), n / of, `${n} / ${of}`));
+      if (r.error) { toast?.(r.error, 7000); log(`✗ ${r.error}`); return; }
+      if (r.files.length === 1) saveBlob(new Blob([r.files[0].bytes], { type: 'application/dicom' }), r.files[0].name.replace('/', '-'));
+      else saveArchives(r.files, `series-${r.series.number}-color`, 'application/dicom', log);
+      log(`⬇ ${r.files.length} image(s) → series ${r.series.number} "${r.series.description}"`);
+      toast?.(T('Colour series saved: {n} image(s), series {s}. Send it to the PACS beside the original.')
+        .replace('{n}', r.files.length).replace('{s}', r.series.number), 7000);
+    } catch (e) {
+      toast?.(`${T('Could not build the colour series:')} ${e.message || e}`, 7000);
+      log(`✗ ${e.message || e}`);
+    } finally {
+      showLoading?.(false);
+      burning = false;
+    }
+  }
+  window.burnChosenPresentation = burnChosenPresentation;
 
   const LUT = (function () {
     const clamp = v => v < 0 ? 0 : v > 255 ? 255 : v | 0;
@@ -271,8 +324,9 @@
     const { rows, cols } = ovRaw, n = rows * cols;
     canvas.width = cols; canvas.height = rows;
     const out = new Uint8ClampedArray(n * 4), lut = LUT[view.cmap] || LUT.gray;
-    if (ovRaw.rgb) {
-      const src = ovRaw.rgb;
+    if (ovRaw.rgb || ovRaw.pres) {
+      const src = ovRaw.rgb ||
+        applyPresentationToFloats(ovRaw.pres.floats, n, view.wc, view.ww, ovRaw.pres.mn, ovRaw.pres.mx, ovRaw.pres);
       for (let i = 0; i < n; i++) { const p = i*4; let r = src[p], g = src[p+1], b = src[p+2]; if (view.invert) { r = 255-r; g = 255-g; b = 255-b; } out[p] = r; out[p+1] = g; out[p+2] = b; out[p+3] = 255; }
     } else {
       // ovRaw.invert = MONOCHROME1, view.invert = toolbar button; they compose.
@@ -380,6 +434,21 @@
   // Only handle on cine state from outside this IIFE (used by tests).
   window.ovCine = { state: cine, start: startCine, stop: stopCine, rate: tagFrameRate };
 
+  // The chosen PR's pipeline for the decoded frame, its floats in the PR's units; null when none
+  // is chosen or it does not cover this frame (then the image draws as stored).
+  function presentationForFrame(res) {
+    const pr = pres.list.find(p => p.index === pres.sel);
+    if (!pr) return null;
+    const prMeta = files[pr.index]?.meta;
+    const p = presentationFor(pr, txt('00080018'), view.frame + 1, readRescale(dict),
+                              previewTransferSyntax(prMeta).isBigEndian);
+    if (!p) return null;
+    p.floats = prRescaleFloats(res.rawFloats, p);
+    if (p.floats === res.rawFloats) { p.mn = res.mn; p.mx = res.mx; }
+    else { p.mn = Infinity; p.mx = -Infinity; for (const v of p.floats) { if (v < p.mn) p.mn = v; if (v > p.mx) p.mx = v; } }
+    return p;
+  }
+
   async function loadImage() {
     if (!canvas) return;
     const noimg = $('ovNoImg'), tools = $('ovTools');
@@ -398,14 +467,18 @@
     if (res.rawFloats) {
       // rawFloats already has Rescale Slope/Intercept applied (in decodeDicomPixels).
       ovRaw = { rawFloats: res.rawFloats, rows: res.rows, cols: res.cols, mn: res.mn, mx: res.mx,
-                wcTag: res.wcTag, wwTag: res.wwTag, invert: res.invert };
+                wcTag: res.wcTag, wwTag: res.wwTag, invert: res.invert, pres: presentationForFrame(res) };
+      if (ovRaw.pres?.window && pres.autoWL) { view.wc = ovRaw.pres.window.wc; view.ww = ovRaw.pres.window.ww; }
       if (view.wc == null) view.wc = res.wcTag ?? Math.round((res.mn + res.mx) / 2);
       if (view.ww == null) view.ww = res.wwTag ?? Math.max(1, res.mx - res.mn);
-      setupWL(); $('ovWL').classList.remove('hidden'); $('ovColormap').disabled = false;
+      setupWL(); $('ovWL').classList.remove('hidden'); $('ovColormap').disabled = !!ovRaw.pres;
     } else {
       ovRaw = { rgb: res.pixels, rows: res.rows, cols: res.cols };
       $('ovWL').classList.add('hidden'); $('ovColormap').disabled = true;
     }
+    // A presentation state's grayscale pipeline does not apply to colour pixels.
+    $('ovPres')?.classList.toggle('hidden', !pres.list.length || !res.rawFloats);
+    $('ovPresBurn')?.classList.toggle('hidden', pres.sel < 0 || !res.rawFloats);
     ovFrames = res.numFrames || 1;
     const fn = $('ovFrameNav');
     if (ovFrames > 1) { fn.classList.remove('hidden'); $('ovFrame').max = ovFrames - 1; syncFrameUI(); }
@@ -421,9 +494,17 @@
     $('ovFlipH').addEventListener('click', () => { view.flipH = !view.flipH; $('ovFlipH').classList.toggle('active', view.flipH); applyTransform(); });
     $('ovFlipV').addEventListener('click', () => { view.flipV = !view.flipV; $('ovFlipV').classList.toggle('active', view.flipV); applyTransform(); });
     $('ovResetView').addEventListener('click', () => { view.zoom = 1; view.panX = 0; view.panY = 0; view.rotate = 0; view.flipH = false; view.flipV = false; $('ovFlipH').classList.remove('active'); $('ovFlipV').classList.remove('active'); applyTransform(); });
-    $('ovWC').addEventListener('input', e => { view.wc = +e.target.value; $('ovWCval').textContent = view.wc; paint(); });
-    $('ovWW').addEventListener('input', e => { view.ww = Math.max(1, +e.target.value); $('ovWWval').textContent = view.ww; paint(); });
-    $('ovPreset').addEventListener('change', e => { if (!e.target.value) return; const [c, w] = e.target.value.split(',').map(Number); view.wc = c; view.ww = w; setupWL(); paint(); });
+    $('ovWC').addEventListener('input', e => { pres.autoWL = false; view.wc = +e.target.value; $('ovWCval').textContent = view.wc; paint(); });
+    $('ovWW').addEventListener('input', e => { pres.autoWL = false; view.ww = Math.max(1, +e.target.value); $('ovWWval').textContent = view.ww; paint(); });
+    $('ovPreset').addEventListener('change', e => { if (!e.target.value) return; pres.autoWL = false; const [c, w] = e.target.value.split(',').map(Number); view.wc = c; view.ww = w; setupWL(); paint(); });
+    $('ovPresBurn')?.addEventListener('click', burnChosenPresentation);
+    // Choosing a PR (or the image as stored) starts again from that one's window.
+    $('ovPres')?.addEventListener('change', e => {
+      pres.sel = parseInt(e.target.value, 10);
+      pres.autoWL = true;
+      view.wc = null; view.ww = null;
+      loadImage();
+    });
     // Using the frame slider stops cine.
     $('ovFrame').addEventListener('input', e => { stopCine(); view.frame = +e.target.value; $('ovFrameLabel').textContent = `${view.frame + 1}/${ovFrames}`; loadImage(); });
     $('ovCinePlay').addEventListener('click', () => { cine.playing ? stopCine() : startCine(); });
@@ -598,7 +679,7 @@
 
     let valHtml = '';
     try {
-      const issues = validateDicom(dict, meta) || [];
+      const issues = validateDicom(dict, meta, studyEntries()) || [];
       if (!issues.length) {
         valHtml = `<section><h2>Validation</h2><p class="ok">✓ No conformance issues found</p></section>`;
       } else {
@@ -663,7 +744,9 @@
       view.rotate = 0; view.flipH = false; view.flipV = false; view.zoom = 1; view.panX = 0; view.panY = 0;
       $('ovInvert')?.classList.remove('active'); $('ovFlipH')?.classList.remove('active'); $('ovFlipV')?.classList.remove('active');
       const cm = $('ovColormap'); if (cm) cm.value = 'gray';
+      pres.autoWL = true;
     }
+    refreshPresentations(!hardReset);
     // Seed cine rate from the new file's tags; a user-typed rate lasts until the next file change.
     cine.fps = tagFrameRate();
     const fpsBox = $('ovCineFps'); if (fpsBox) fpsBox.value = cine.fps;

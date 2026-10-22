@@ -407,13 +407,100 @@ function auditPhiTags({ d, push }) {
   visit(d, null);
 }
 
-function validateDicom(d, meta) {
+// ---- Derived copies and presentation states ----
+// Why one study looks different in two places: a CD export that converted the modality's objects,
+// a grayscale image carrying colour tables, a colour map kept in a presentation state.
+const vText = (d, tag) => String(lookupTag(d, tag)?.Value?.[0] ?? '').trim();
+const vItems = (d, tag) => (lookupTag(d, tag)?.Value || []).filter(it => it && typeof it === 'object');
+const sopName = uid => SOP_ATTRS[uid]?.name || (PR_CLASSES[uid] ? `${PR_CLASSES[uid].kind} presentation state` : uid);
+
+// 6. Converted copies: Conversion Source Attributes (0020,9172), or a Related Series item whose
+// purpose is "Alternate SOP Class instance" (DCM 121326), name the object this one was made from.
+function validateConversion({ d, push }, study) {
+  const sources = vItems(d, '00209172').map(it => ({
+    tag: '00209172', cls: vText(it, '00081150'), sop: vText(it, '00081155'), frame: vText(it, '00081160') }));
+  if (!sources.length) {
+    for (const s of vItems(d, '00081250')) {
+      const alt = vItems(s, '0040a170').some(c => vText(c, '00080100') === '121326');
+      if (alt) for (const im of vItems(s, '00081140'))
+        sources.push({ tag: '00081250', cls: vText(im, '00081150'), sop: vText(im, '00081155'), frame: vText(im, '00081160') });
+    }
+  }
+  const src = sources.find(s => s.sop);
+  if (!src) return;
+  let msg = `Converted from ${sopName(src.cls)}${src.frame ? ` (frame ${src.frame})` : ''}: an export (often a CD) made this copy; it is not the object the modality stored.`;
+  if (study) {
+    const loaded = study.find(e => e.dict && vText(e.dict, '00080018') === src.sop);
+    msg += loaded
+      ? ` The source is loaded: ${loaded.name || src.sop}.`
+      : ' The source is not among the loaded files; the PACS may hold it as one object, not as this series.';
+  }
+  push('info', src.tag, msg, src.sop, null);
+}
+
+// 7. Palette Color tables on a MONOCHROME image are only meant to be shown with Pixel Presentation
+// (0008,9205) COLOR or MIXED (PS3.3 C.8.16.2.1.1.1); without it viewers disagree.
+function validateGrayPalette({ d, push }) {
+  const pi = vText(d, '00280004').toUpperCase();
+  if (!/^MONOCHROME[12]$/.test(pi) || !lookupTag(d, '00281201')) return;
+  const pp = vText(d, '00089205').toUpperCase();
+  if (pp === 'COLOR' || pp === 'MIXED') return;
+  push('warning', '00281201',
+    `${pi} image carries Palette Color Lookup Tables but Pixel Presentation (0008,9205) is ${pp || 'absent'}, not COLOR or MIXED: some viewers show it in colour, others in grey`,
+    pp, null);
+}
+
+// 8. Cross-file checks, only with the loaded study: another series under the same Series Number,
+// a PR whose images are missing, a PR that refers to this image.
+function validateAgainstStudy({ d, push }, study) {
+  const sop = vText(d, '00080018'), studyUID = vText(d, '0020000d'), seriesUID = vText(d, '0020000e');
+  const others = study.filter(e => e.dict && vText(e.dict, '00080018') !== sop);
+
+  const num = vText(d, '00200011');
+  if (num && seriesUID) {
+    const clash = new Map();
+    for (const e of others) {
+      const s = vText(e.dict, '0020000e');
+      if (s && s !== seriesUID && vText(e.dict, '0020000d') === studyUID && vText(e.dict, '00200011') === num && !clash.has(s))
+        clash.set(s, vText(e.dict, '0008103e'));
+    }
+    if (clash.size) {
+      const [uid, desc] = clash.entries().next().value;
+      push('warning', '00200011',
+        `Series Number ${num} is also used by ${clash.size === 1 ? 'another series' : `${clash.size} other series`} in this study${desc ? ` ("${desc}")` : ''}: viewers that group by number may show only one of them`,
+        uid, null);
+    }
+  }
+
+  if (PR_CLASSES[vText(d, '00080016')]) {
+    const refs = prReferences(d);
+    const loaded = new Set(others.map(e => vText(e.dict, '00080018')));
+    const missing = refs.filter(r => !loaded.has(r.sop)).length;
+    if (!refs.length) push('warning', '00081115', 'This presentation state refers to no images', '', null);
+    else if (missing) push('warning', '00081115',
+      `Refers to ${refs.length} image(s); ${missing} of them are not among the loaded files, so it cannot be shown on them`, '', null);
+    else push('info', '00081115',
+      `Refers to ${refs.length} loaded image(s); open one of them and choose this presentation state in the viewer`, '', null);
+    return;
+  }
+
+  for (const p of presentationStatesFor(others, sop))
+    push('info', '00080018',
+      `Presentation state "${p.label}" (${p.kind}) refers to this image${p.supported ? ': choose it under the viewer\'s presentation menu to see it as the modality meant' : '; this viewer cannot apply that kind'}`,
+      vText(p.dict, '00080018'), null);
+}
+
+// study (optional): [{ dict, name }] for every loaded file, the open one included.
+function validateDicom(d, meta, study) {
   const ctx = makeValidatorContext(d, meta);
   validateSopConformance(ctx);
   validateUidFormats(ctx);
   validateVrFormats(ctx);
   validatePixelGeometry(ctx);
   auditPhiTags(ctx);
+  validateConversion(ctx, study);
+  validateGrayPalette(ctx);
+  if (study) validateAgainstStudy(ctx, study);
   return ctx.issues;
 }
 

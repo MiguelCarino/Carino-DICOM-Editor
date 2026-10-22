@@ -5,6 +5,33 @@ Licensed under **AGPL-3.0-or-later** (see [LICENSE](LICENSE)).
 
 ## [Unreleased]
 
+### Added
+- **Presentation states in the viewer.** When a loaded Grayscale (`…11.1`) or Pseudo-Color
+  (`…11.3`) Softcopy Presentation State refers to the open image, a menu beside the colormap
+  offers it next to *Image as stored*. The PR's Modality LUT (rescale), the Softcopy VOI LUT
+  window for each frame and either its Presentation LUT Shape (`INVERSE`) or its Palette Color
+  LUT are applied, the window's output spread over the palette's entries. Moving a window slider
+  takes over from the PR's window. Colour, blending and XA/XRF PRs are listed but cannot be
+  chosen; annotations, displayed area, rotation and flip are not applied. Checked against a
+  scanner's own RGB rendering of a perfusion map: identical apart from a mark the scanner
+  burns into its copy.
+- **Save as colour series**, beside the presentation menu: every loaded image and frame the
+  chosen PR covers, drawn through the PR as it is defined (its windows, not the sliders), saved
+  as single-frame RGB Secondary Capture (`1.2.840.10008.5.1.4.1.1.7`, Conversion Type `WSD`)
+  in one new series of the same study: one archive, or one file. Patient, study, accession and
+  Request Attributes are copied from the source; Image Type `DERIVED\SECONDARY`, a Derivation
+  Description naming the PR, and a Source Image Sequence item (with frame number) per image.
+  The Series Number is the source's followed by `99` (5047 → 504799), moved on if a loaded
+  series uses it; the description is the source's plus `COLOR`. No pixel spacing is written (a
+  rendered copy is not for measuring). On the perfusion case, all 16 frames match the
+  scanner's own colour copies apart from the mark it burns into them.
+- **Study checks in the Conformance card** (with the loaded files as context): another series
+  in the study under the same Series Number (viewers that group by number show only one); a
+  converted copy, from Conversion Source Attributes `(0020,9172)` or an "Alternate SOP Class
+  instance" Related Series item, naming its source and whether it is loaded; a MONOCHROME image
+  carrying Palette Color tables without Pixel Presentation `COLOR`/`MIXED`; a PR whose images are
+  not loaded; and, on an image, the loaded PRs that refer to it.
+
 ## [1.1.0] — 2026-10-16
 
 ### Added
