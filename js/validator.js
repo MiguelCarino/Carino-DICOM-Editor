@@ -228,6 +228,21 @@ const PHI_TAGS = new Set([
 const PHI_PLACEHOLDERS = new Set(['ANON', 'ANONYMOUS', 'ANON^ANON', 'ANONYMIZED', '000Y',
                                   '19000101', '000000', '19000101000000', 'urn:anonymized', 'COERCE', 'UNVERIFIED']);
 
+// ---- Messages ----
+// An issue's msg is English (the log, the printed report and the tests read it); the Conformance
+// card shows validatorMsg(), translated. A message with values is an English template plus them:
+// p fills {name} as data, pt names the values that are words to translate too.
+const vMsg = (key, p = {}, pt = []) => ({ key, p, pt });
+const fillMsg = (tpl, p) => tpl.replace(/\{(\w+)\}/g, (all, k) => (k in p ? String(p[k]) : all));
+function validatorMsg(iss) {
+  if (!iss.parts) return T(iss.msg);
+  return iss.parts.map(m => {
+    const p = { ...m.p };
+    for (const k of m.pt) p[k] = T(p[k]);
+    return fillMsg(T(m.key), p);
+  }).join(' ');
+}
+
 // ---- Validation engine ----
 // Dataset keys are either 'xGGGGEEEE' or bare 8-hex; anything else (e.g. _vrMap) is not an element.
 const validatorIsTagKey = t => t.startsWith('x') || /^[0-9a-f]{8}$/i.test(t);
@@ -236,8 +251,13 @@ const validatorStripX = rawTag => rawTag.startsWith('x') ? rawTag.slice(1) : raw
 // Shared state for one validateDicom run: the dataset, the issue list and its readers.
 function makeValidatorContext(d, meta) {
   const issues = [];
-  const push = (sev, tag, msg, val, fix) =>
-    issues.push({ sev, tag, desc: descFor('x'+tag.toLowerCase()) || 'Unknown', msg, val: String(val ?? ''), fix });
+  // msg: plain English (its own translation key), or vMsg() parts, joined by a space.
+  const push = (sev, tag, msg, val, fix) => {
+    const parts = typeof msg === 'string' ? null : [].concat(msg);
+    issues.push({ sev, tag, desc: descFor('x'+tag.toLowerCase()) || 'Unknown',
+                  msg: parts ? parts.map(m => fillMsg(m.key, m.p)).join(' ') : msg, parts,
+                  val: String(val ?? ''), fix });
+  };
 
   // Use getTag: tags here are lowercase but dcmjs keys are UPPERCASE.
   const getVal = tag => {
@@ -263,25 +283,25 @@ function validateSopConformance({ push, getVal }) {
   if (!sopUID) {
     push('error','00080016','SOP Class UID missing — cannot determine IOD conformance','',null);
   } else if (!KNOWN_SOP_UIDS.has(sopUID)) {
-    push('warning','00080016',`Unknown SOP Class UID — may be proprietary or private`,sopUID,null);
+    push('warning','00080016','Unknown SOP Class UID — may be proprietary or private',sopUID,null);
   }
   if (!sopDef) return;
   for (const [rawTag, type] of Object.entries(sopDef.attrs)) {
     const tag = validatorStripX(rawTag);
     const val = getVal(tag);
     if (type === 1) {
-      if (val === null) push('error', tag, `Missing — Type 1 required for ${sopDef.name}`, '', null);
-      else if (val === '') push('error', tag, `Empty — Type 1 must have a value in ${sopDef.name}`, '', null);
+      if (val === null) push('error', tag, vMsg('Missing — Type 1 required for {iod}', { iod: sopDef.name }), '', null);
+      else if (val === '') push('error', tag, vMsg('Empty — Type 1 must have a value in {iod}', { iod: sopDef.name }), '', null);
     } else if (type === 2) {
-      if (val === null) push('warning', tag, `Missing — Type 2 should be present in ${sopDef.name}`, '', null);
+      if (val === null) push('warning', tag, vMsg('Missing — Type 2 should be present in {iod}', { iod: sopDef.name }), '', null);
     } else if (type === '1C' || type === '2C') {
-      if (val === null) push('info', tag, `Conditionally required — verify if applicable for ${sopDef.name}`, '', null);
+      if (val === null) push('info', tag, vMsg('Conditionally required — verify if applicable for {iod}', { iod: sopDef.name }), '', null);
     }
   }
   for (const [rawTag, allowed] of Object.entries(sopDef.enums || {})) {
     const tag = validatorStripX(rawTag);
     const val = getVal(tag)?.trim();
-    if (val && !allowed.includes(val)) push('error', tag, `"${val}" is not allowed in ${sopDef.name} (only ${allowed.join(', ')})`, val, null);
+    if (val && !allowed.includes(val)) push('error', tag, vMsg('"{v}" is not allowed in {iod} (only {list})', { v: val, iod: sopDef.name, list: allowed.join(', ') }), val, null);
   }
 }
 
@@ -290,7 +310,7 @@ function validateUidFormats({ push, getVal, getEl }) {
   for (const uTag of ['00080016','00080018','0020000d','0020000e','00200052']) {
     const val = getVal(uTag);
     if (val === null || val === '') continue;
-    if (val.length > 64) push('error', uTag, `UID exceeds 64 characters (${val.length})`, val, null);
+    if (val.length > 64) push('error', uTag, vMsg('UID exceeds 64 characters ({n})', { n: val.length }), val, null);
     if (!/^[0-9.]+$/.test(val)) push('error', uTag, 'UID contains invalid characters (only digits and dots allowed)', val, null);
     if (/\.(0\d)/.test(val)) push('warning', uTag, 'UID component has leading zero (e.g. .01)', val, null);
     if (val.endsWith('.')) push('error', uTag, 'UID must not end with a dot', val, null);
@@ -305,10 +325,10 @@ function validateElementVr(push, tag, el, vr) {
     const rule = VR_RULES[vr];
     if (!rule) continue;
     if (rule.maxLen && v.length > rule.maxLen) {
-      push('error', tag, `${vr} value exceeds max length ${rule.maxLen} (got ${v.length})`, v, null);
+      push('error', tag, vMsg('{vr} value exceeds max length {max} (got {n})', { vr, max: rule.maxLen, n: v.length }), v, null);
     }
     if (rule.re && v && !rule.re.test(v.trim())) {
-      push('warning', tag, `${vr} value "${v.trim()}" does not match expected format: ${rule.hint}`, v, null);
+      push('warning', tag, vMsg('{vr} value "{v}" does not match expected format: {hint}', { vr, v: v.trim(), hint: rule.hint }, ['hint']), v, null);
     }
   }
   // Trailing spaces (common issue)
@@ -324,13 +344,13 @@ function validateElementVr(push, tag, el, vr) {
   if (vr === 'CS' && CS_ENUMS[k]) {
     for (const raw of vals) {
       const v = String(raw ?? '').trim();
-      if (v && !CS_ENUMS[k].has(v)) push('warning', tag, `"${v}" is not a defined value for this CS tag`, v, null);
+      if (v && !CS_ENUMS[k].has(v)) push('warning', tag, vMsg('"{v}" is not a defined value for this CS tag', { v }), v, null);
     }
   }
   if (vr === 'US' && US_ENUMS[k]) {
     for (const raw of vals) {
       const v = String(raw ?? '').trim();
-      if (v && !US_ENUMS[k].has(v)) push('warning', tag, `"${v}" is not a defined value for this attribute`, v, null);
+      if (v && !US_ENUMS[k].has(v)) push('warning', tag, vMsg('"{v}" is not a defined value for this attribute', { v }), v, null);
     }
   }
 }
@@ -368,7 +388,7 @@ function validatePixelGeometry({ d, meta, push, getVal }) {
   const actual   = buf instanceof ArrayBuffer ? buf.byteLength : 0;
   if (actual && Math.abs(actual - expected) > 2) {
     push('warning','7fe00010',
-      `Pixel buffer size mismatch — expected ${expected} bytes, got ${actual}`,
+      vMsg('Pixel buffer size mismatch — expected {want} bytes, got {got}', { want: expected, got: actual }),
       `${actual} vs ${expected}`, null);
   }
 }
@@ -428,12 +448,14 @@ function validateConversion({ d, push }, study) {
   }
   const src = sources.find(s => s.sop);
   if (!src) return;
-  let msg = `Converted from ${sopName(src.cls)}${src.frame ? ` (frame ${src.frame})` : ''}: an export (often a CD) made this copy; it is not the object the modality stored.`;
+  const msg = [src.frame
+    ? vMsg('Converted from {cls} (frame {frame}): an export (often a CD) made this copy; it is not the object the modality stored.', { cls: sopName(src.cls), frame: src.frame })
+    : vMsg('Converted from {cls}: an export (often a CD) made this copy; it is not the object the modality stored.', { cls: sopName(src.cls) })];
   if (study) {
     const loaded = study.find(e => e.dict && vText(e.dict, '00080018') === src.sop);
-    msg += loaded
-      ? ` The source is loaded: ${loaded.name || src.sop}.`
-      : ' The source is not among the loaded files; the PACS may hold it as one object, not as this series.';
+    msg.push(loaded
+      ? vMsg('The source is loaded: {name}.', { name: loaded.name || src.sop })
+      : vMsg('The source is not among the loaded files; the PACS may hold it as one object, not as this series.'));
   }
   push('info', src.tag, msg, src.sop, null);
 }
@@ -446,7 +468,8 @@ function validateGrayPalette({ d, push }) {
   const pp = vText(d, '00089205').toUpperCase();
   if (pp === 'COLOR' || pp === 'MIXED') return;
   push('warning', '00281201',
-    `${pi} image carries Palette Color Lookup Tables but Pixel Presentation (0008,9205) is ${pp || 'absent'}, not COLOR or MIXED: some viewers show it in colour, others in grey`,
+    pp ? vMsg('{pi} image carries Palette Color Lookup Tables but Pixel Presentation (0008,9205) is {pp}, not COLOR or MIXED: some viewers show it in colour, others in grey', { pi, pp })
+       : vMsg('{pi} image carries Palette Color Lookup Tables but Pixel Presentation (0008,9205) is absent, not COLOR or MIXED: some viewers show it in colour, others in grey', { pi }),
     pp, null);
 }
 
@@ -467,7 +490,9 @@ function validateAgainstStudy({ d, push }, study) {
     if (clash.size) {
       const [uid, desc] = clash.entries().next().value;
       push('warning', '00200011',
-        `Series Number ${num} is also used by ${clash.size === 1 ? 'another series' : `${clash.size} other series`} in this study${desc ? ` ("${desc}")` : ''}: viewers that group by number may show only one of them`,
+        clash.size === 1
+          ? vMsg('Series Number {num} is also used by another series in this study{desc}: viewers that group by number may show only one of them', { num, desc: desc ? ` ("${desc}")` : '' })
+          : vMsg('Series Number {num} is also used by {n} other series in this study{desc}: viewers that group by number may show only one of them', { num, n: clash.size, desc: desc ? ` ("${desc}")` : '' }),
         uid, null);
     }
   }
@@ -478,15 +503,17 @@ function validateAgainstStudy({ d, push }, study) {
     const missing = refs.filter(r => !loaded.has(r.sop)).length;
     if (!refs.length) push('warning', '00081115', 'This presentation state refers to no images', '', null);
     else if (missing) push('warning', '00081115',
-      `Refers to ${refs.length} image(s); ${missing} of them are not among the loaded files, so it cannot be shown on them`, '', null);
+      vMsg('Refers to {n} image(s); {m} of them are not among the loaded files, so it cannot be shown on them', { n: refs.length, m: missing }), '', null);
     else push('info', '00081115',
-      `Refers to ${refs.length} loaded image(s); open one of them and choose this presentation state in the viewer`, '', null);
+      vMsg('Refers to {n} loaded image(s); open one of them and choose this presentation state in the viewer', { n: refs.length }), '', null);
     return;
   }
 
   for (const p of presentationStatesFor(others, sop))
     push('info', '00080018',
-      `Presentation state "${p.label}" (${p.kind}) refers to this image${p.supported ? ': choose it under the viewer\'s presentation menu to see it as the modality meant' : '; this viewer cannot apply that kind'}`,
+      p.supported
+        ? vMsg('Presentation state "{label}" ({kind}) refers to this image: choose it under the viewer\'s presentation menu to see it as the modality meant', { label: p.label, kind: p.kind }, ['kind'])
+        : vMsg('Presentation state "{label}" ({kind}) refers to this image; this viewer cannot apply that kind', { label: p.label, kind: p.kind }, ['kind']),
       vText(p.dict, '00080018'), null);
 }
 

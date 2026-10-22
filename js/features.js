@@ -1032,3 +1032,18 @@ createDicomBtn.addEventListener('click', async () => {
   setCreateButtonLabel();
 });
 
+
+// ---- Language switch ----
+// i18n.js re-translates static markup (data-i18n, ATTR_I18N); text built at render time keeps the
+// language it was drawn in until redrawn, so redraw what is built from T() here. Nothing is reset.
+window.addEventListener('carino:langchange', () => {
+  renderSeriesPanel(); renderCreateGrid(); renderCreateOrder();
+  renderExtractorGrid();
+  updateDeidOptsCount();
+  if (!dict) return;
+  renderFileBrowser();
+  syncImgEditCard();          // and the compression row inside it
+  renderCompareUI();
+  renderTable();
+  window.ovRetranslate?.();
+});

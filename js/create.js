@@ -74,7 +74,7 @@ function renderSeriesPanel() {
     if (createSeries.length > 1) {
       const rm = document.createElement('button');
       rm.className = 'series-rm-btn';
-      rm.title = 'Remove series';
+      rm.title = T('Remove series');
       rm.textContent = '✕';
       rm.addEventListener('click', () => removeSeries(s.id));
       row.appendChild(rm);
@@ -135,7 +135,7 @@ function renderCreateGrid() {
 
     const sel = document.createElement('select');
     sel.className = 'img-thumb-series';
-    sel.title = 'Assign series';
+    sel.title = T('Assign series');
     sel.style.background = seriesColor(img.series) + 'cc';
     createSeries.forEach(s => {
       const opt = document.createElement('option');
@@ -183,7 +183,7 @@ clearCreateBtn.addEventListener('click', () => {
   nextSeriesId = 2;
   renderCreateGrid();
   renderSeriesPanel();
-  toast?.('Cleared all images');
+  toast?.(T('Cleared all images'));
 });
 
 createSideDropZone.addEventListener('dragover', e => { e.preventDefault(); e.stopPropagation(); });

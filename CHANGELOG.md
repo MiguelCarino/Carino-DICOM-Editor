@@ -5,6 +5,19 @@ Licensed under **AGPL-3.0-or-later** (see [LICENSE](LICENSE)).
 
 ## [Unreleased]
 
+### Fixed
+- **Switching language with a file open left text in the old language.** Only static markup was
+  re-translated; the compression notes and warnings, the Overview cards, the validator badges,
+  the series tiles, the tag table, Compare, Create and Extract are now redrawn on a switch
+  (nothing is reset). Strings that never went through translation now do: the no-image
+  message, the SHA-256 row, the validator badges (now "Errors: 2" style, which needs no plural
+  rules), "Current:", the overflow line, Create's series titles and three toasts, in es / pt-BR /
+  ja / ru.
+- **Validator messages are shown in the reader's language.** The Conformance card translates
+  every finding (missing and empty attributes, UID and VR format, enumerated values, pixel
+  size, and the study checks), with each message's values filled in after translation. The
+  issue's own text stays English for the log, the printed report and the tests.
+
 ### Added
 - **Presentation states in the viewer.** When a loaded Grayscale (`…11.1`) or Pseudo-Color
   (`…11.3`) Softcopy Presentation State refers to the open image, a menu beside the colormap

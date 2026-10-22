@@ -55,7 +55,7 @@ window.addEventListener('load', () => {
   });
   if (armed) {
     showLoading?.(true, 'Copying study from Carino DICOM…');       // spinner until the bytes arrive
-    giveUp = setTimeout(() => { dropBridgeMarker(); showLoading?.(false); toast?.('No response from Carino DICOM'); }, 60000);
+    giveUp = setTimeout(() => { dropBridgeMarker(); showLoading?.(false); toast?.(T('No response from Carino DICOM')); }, 60000);
     return;
   }
 

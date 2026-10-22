@@ -97,21 +97,21 @@
     const entry = files[currentFileIdx];
     let cell;
     if (!entry || entry.shaState === 'unavailable' || (!entry.file && !entry.sha)) {
-      cell = `<span class="ov-kv-v empty">unavailable</span>`;
+      cell = `<span class="ov-kv-v empty">${esc(T('unavailable'))}</span>`;
     } else if (entry.shaState === 'computing') {
-      cell = `<span class="ov-kv-v">computing…</span>`;
+      cell = `<span class="ov-kv-v">${esc(T('computing…'))}</span>`;
     } else if (entry.shaState === 'deferred') {
       const mb = (entry.size / 1048576).toFixed(1);
       // No inline handler (the page's Content-Security-Policy forbids them); bound in renderTech.
-      cell = `<span class="ov-kv-v"><button class="ov-reveal" data-compute-sha>Compute — ${mb} MB</button></span>`;
+      cell = `<span class="ov-kv-v"><button class="ov-reveal" data-compute-sha>${esc(T('Compute — {n} MB').replace('{n}', mb))}</button></span>`;
     } else if (entry.sha) {
       const note = (typeof datasetDirty !== 'undefined' && datasetDirty)
-        ? ` <span class="ov-sha-stale" title="You have edited the working copy this session. This hash is still the ORIGINAL file's — an exported/edited file will hash differently.">working copy edited</span>` : '';
+        ? ` <span class="ov-sha-stale" title="${esc(T("You have edited the working copy this session. This hash is still the ORIGINAL file's — an exported/edited file will hash differently."))}">${esc(T('working copy edited'))}</span>` : '';
       cell = `<span class="ov-kv-v ov-sha">${esc(entry.sha)}${note}</span>`;
     } else {
       cell = `<span class="ov-kv-v empty">—</span>`;
     }
-    return `<div class="ov-kv-row"><span class="ov-kv-k">SHA-256 <span class="ov-kv-sub">file as loaded</span></span>${cell}</div>`;
+    return `<div class="ov-kv-row"><span class="ov-kv-k">SHA-256 <span class="ov-kv-sub">${esc(T('file as loaded'))}</span></span>${cell}</div>`;
   }
 
   // Compression verdict, plus the viewer warnings (signed compressed pixels, no window) that
@@ -120,7 +120,7 @@
     const entry = files[currentFileIdx];
     if (!entry || !lookupTag(dict, '7fe00010')) return '';
     const ci = compressionInfo(entry);
-    return kvRow('Compression', compressionLabel(ci)) +
+    return kvRow(T('Compression'), compressionLabel(ci)) +
       ci.warnings.map(w => `<div class="ov-kv-warn">⚠ ${esc(w)}</div>`).join('');
   }
 
@@ -220,20 +220,20 @@
 
     summary.style.display = '';
     summary.innerHTML =
-      `<div class="val-badge error">● ${errors} Error${errors!==1?'s':''}</div>` +
-      `<div class="val-badge warning">● ${warnings} Warning${warnings!==1?'s':''}</div>` +
-      `<div class="val-badge phi">● ${phi} PHI Flag${phi!==1?'s':''}</div>` +
-      `<div class="val-badge info">● ${info} Info</div>`;
+      `<div class="val-badge error">● ${esc(T('Errors: {n}').replace('{n}', errors))}</div>` +
+      `<div class="val-badge warning">● ${esc(T('Warnings: {n}').replace('{n}', warnings))}</div>` +
+      `<div class="val-badge phi">● ${esc(T('PHI flags: {n}').replace('{n}', phi))}</div>` +
+      `<div class="val-badge info">● ${esc(T('Info: {n}').replace('{n}', info))}</div>`;
 
     const CAP = 60;
     const shown = issues.slice(0, CAP);
     const rows = shown.map(iss => `<div class="val-issue"><div class="val-dot ${iss.sev}"></div>
         <div class="val-issue-body">
           <div class="val-issue-tag">${fmtTag('x'+iss.tag.toLowerCase())} ${esc(iss.desc)}</div>
-          ${iss.sev !== 'phi' ? `<div class="val-issue-msg">${esc(iss.msg)}</div>` : ''}
-          ${iss.val ? `<div class="val-issue-val">${iss.sev==='phi'?'':'Current: '}${esc(iss.val.slice(0,120))}${iss.val.length>120?'…':''}</div>` : ''}
+          ${iss.sev !== 'phi' ? `<div class="val-issue-msg">${esc(validatorMsg(iss))}</div>` : ''}
+          ${iss.val ? `<div class="val-issue-val">${iss.sev==='phi'?'':esc(T('Current:')) + ' '}${esc(iss.val.slice(0,120))}${iss.val.length>120?'…':''}</div>` : ''}
         </div></div>`).join('');
-    const more = issues.length > CAP ? `<div class="val-issue-msg" style="padding:6px 4px;opacity:.7">+${issues.length - CAP} more issue${issues.length - CAP !== 1 ? 's' : ''}…</div>` : '';
+    const more = issues.length > CAP ? `<div class="val-issue-msg" style="padding:6px 4px;opacity:.7">${esc(T('More issues not shown: {n}').replace('{n}', issues.length - CAP))}</div>` : '';
     list.innerHTML = `<div class="val-issues">${rows}${more}</div>`;
   }
 
@@ -459,7 +459,7 @@
     if (my !== loadSeq) return;
     if (!res || res.error) {
       ovRaw = null; canvas.style.display = 'none'; noimg.classList.remove('hidden');
-      noimg.textContent = res && res.error ? res.error : 'No renderable pixel data in this file.';
+      noimg.textContent = res && res.error ? res.error : T('No renderable pixel data in this file.');
       $('ovWL').classList.add('hidden'); $('ovFrameNav').classList.add('hidden'); stopCine(); if (tools) tools.style.display = 'none';
       return;
     }
@@ -752,6 +752,20 @@
     const fpsBox = $('ovCineFps'); if (fpsBox) fpsBox.value = cine.fps;
     renderedIdx = currentFileIdx;
     loadImage();
+  };
+
+  // Text only, after a language switch: the cards, the position label, the presentation menu and
+  // the cine button. The view (frame, W/L, zoom, chosen PR) is left as it is.
+  window.ovRetranslate = function () {
+    if (!dict) return;
+    renderCore(); renderTech(); renderRis(); renderMfr(); renderOvValidation();
+    if (files.length > 1) $('ovStudyIdx').textContent = studyIdxLabel();
+    refreshPresentations(true);
+    if (ovRaw) {
+      $('ovPres')?.classList.toggle('hidden', !pres.list.length || !ovRaw.rawFloats);
+      $('ovPresBurn')?.classList.toggle('hidden', pres.sel < 0 || !ovRaw.rawFloats);
+    }
+    syncCineBtn();
   };
 
   // Called by switchTab: render if the current file hasn't been drawn here yet.
