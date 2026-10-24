@@ -5,7 +5,26 @@ Licensed under **AGPL-3.0-or-later** (see [LICENSE](LICENSE)).
 
 ## [Unreleased]
 
+### Changed
+- **Files in and files out sit in the same place in every module.** Load Files is the first card
+  of the right column in Overview, Edit, Extract and Create, with the same drop zone and Open
+  buttons (compact once files are loaded). The save action is the yellow button at the right end
+  of the top bar: Edit's downloads stay there, Extract All / First Frames move up from the Export
+  card (removed), and Create DICOM moves up from the bottom of the form, so it stays on screen
+  while the form scrolls. The Overview's "+ Open", Create's "+ Add Images" and Extract's
+  "+ Add other files" buttons are gone, since the Load Files card does the same job. A
+  boot-suite check holds the rule.
+- **No language picker on a phone.** Under 700px the header's language button is hidden; the
+  browser's language, or `?lang=`, still applies.
+- **Phone layout (700px and under).** The four tabs share their row in equal widths; Edit's nine
+  tag-category chips become one menu (kept in step with the chips); Extract's First frames and All
+  as PNG buttons share one row with short labels, translated in es / pt-BR / ja / ru.
+- **The Overview's printout is titled "DICOM Study Report"** (was "DICOM Study Overview"), in
+  line with the "DICOM Comparison Report".
+
 ### Fixed
+- **Phone: the Overview's "Series 1 / 5" broke onto three lines.** The file name now takes its
+  own line above the buttons.
 - **Switching language with a file open left text in the old language.** Only static markup was
   re-translated; the compression notes and warnings, the Overview cards, the validator badges,
   the series tiles, the tag table, Compare, Create and Extract are now redrawn on a switch
