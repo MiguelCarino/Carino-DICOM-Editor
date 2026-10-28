@@ -6,6 +6,13 @@ Licensed under **AGPL-3.0-or-later** (see [LICENSE](LICENSE)).
 ## [Unreleased]
 
 ### Changed
+- **Reports download as PDF files instead of opening the print dialog.** The tag dump (Export ▸
+  PDF), the Overview's PDF button and the Comparison report are laid out at A4 width, cut into
+  pages on row edges, drawn page by page and saved as `<file>_<report>.pdf` (Compare:
+  `<A>_vs_<B>_…`). Japanese, Cyrillic and every patient-name script come out as on screen, in
+  the editor's own fonts. Pages are pictures, so the PDF's text is not selectable; the column
+  header row is not repeated on continuation pages. Adds `vendor/html2canvas.min.js` (MIT),
+  loaded only when a report is made. Same in the browser and the desktop app.
 - **Files in and files out sit in the same place in every module.** Load Files is the first card
   of the right column in Overview, Edit, Extract and Create, with the same drop zone and Open
   buttons (compact once files are loaded). The save action is the yellow button at the right end

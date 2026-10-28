@@ -43,7 +43,7 @@ be called `DICOM-editor`; GitHub redirects the old name.
   a lossless source; a lossy source stays lossy and keeps `(0028,2110) = 01`. Compare decodes both
   files and says whether the pixels match even when the encodings differ, lists the compression
   facts that differ (syntax, lossless or lossy, ratio, stored size, the lossy-history tags, image
-  size, Bits Stored, SOP Class, viewer warnings), and the Comparison report prints all of them in a Pixel data & compression section.
+  size, Bits Stored, SOP Class, viewer warnings), and the Comparison report (a PDF download) lists all of them in a Pixel data & compression section.
 
 ## Eye photos
 
