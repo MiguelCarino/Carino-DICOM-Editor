@@ -20,6 +20,7 @@
   "build": {
     "appId": "systems.carino.dicom.editor",
     "productName": "Carino-DICOM-Editor",
+    "afterPack": "build/adhoc-sign.js",
     "afterSign": "build/notarize.js",
     "files": ["main.js", "preload.js", "i18n.js", "assets/**/*"],
     "extraResources": [
