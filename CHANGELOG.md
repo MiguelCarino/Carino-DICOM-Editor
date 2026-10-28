@@ -3,7 +3,7 @@
 All notable changes to Carino DICOM Editor. Versions follow [Semantic Versioning](https://semver.org/).
 Licensed under **AGPL-3.0-or-later** (see [LICENSE](LICENSE)).
 
-## [Unreleased]
+## [1.2.0] — 2026-10-28
 
 ### Changed
 - **Reports download as PDF files instead of opening the print dialog.** The tag dump (Export ▸
@@ -30,6 +30,11 @@ Licensed under **AGPL-3.0-or-later** (see [LICENSE](LICENSE)).
   line with the "DICOM Comparison Report".
 
 ### Fixed
+- **macOS: the Apple Silicon app would not open** ("damaged", or killed at launch). Without a
+  signing identity electron-builder left Electron's own signature on a bundle it had renamed and
+  rewritten, so the arm64 app in 1.1.0 failed `codesign --verify`. An afterPack hook now signs it
+  ad-hoc, and the macOS build checks both architectures' signatures and starts the arm64 app
+  before anything is uploaded. The first launch still needs Open Anyway.
 - **Phone: the Overview's "Series 1 / 5" broke onto three lines.** The file name now takes its
   own line above the buttons.
 - **Switching language with a file open left text in the old language.** Only static markup was
