@@ -161,8 +161,9 @@ async function serveFromBundle(request) {
   return new Response(body, { headers });
 }
 
-// Same policy as index.html's meta (keep the two in step): nothing but the bundle itself.
-const CSP = "default-src 'self'; script-src 'self' 'unsafe-eval' 'wasm-unsafe-eval'; " +
+// Same policy as index.html's meta (keep the two in step): nothing but the bundle itself, plus
+// the theme's first-paint snippet, pinned by its sha256 (recompute it if that snippet changes).
+const CSP = "default-src 'self'; script-src 'self' 'sha256-nLOxN9NAyU6/BFv+84gVfCVEZjWILVDWTODOOzeFVaA=' 'unsafe-eval' 'wasm-unsafe-eval'; " +
   "style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; " +
   "connect-src 'self' blob: data:; worker-src 'self' blob:; media-src 'self' blob:; " +
   "object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'";
