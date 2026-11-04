@@ -57,7 +57,9 @@ jobs:
       # nsis given both arches emits ONE installer carrying both payloads.
       matrix:
         include:
-          - os: ubuntu-latest
+          # Pinned like Retina and Carino DICOM: ubuntu-latest moved to an image with
+          # rpm 6, which the fpm electron-builder bundles cannot package for.
+          - os: ubuntu-24.04
             expect: |
               Carino-DICOM-Editor-1.2.0-x86_64.AppImage
               Carino-DICOM-Editor-1.2.0-arm64.AppImage
