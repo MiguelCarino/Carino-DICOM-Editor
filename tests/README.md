@@ -39,19 +39,21 @@ sample values** (the forge's own windowing, rescale and photometric
 interpretation). A case passes only when the app's decoder agrees with that
 reference, so a decoder that is wrong in a self-consistent way still fails.
 
-Exception: JPEG 2000 and JPEG-LS have no browser encoder, so five codestreams are
-embedded in `dicom-forge.js` as base64 and regenerated out of band by
-`tests/fixtures/make-codec-fixtures.mjs` (needs npm + network; `run.sh` never
-runs it). They are encoded by the same OpenJPEG/CharLS code that decodes them, so
-a symmetric codec bug would cancel out; what they still catch is the wiring
-(interleave, byte order, bit depth, sign, planar config, photometric, frame
-offsets), because the reference image is still computed from first principles.
+Exception: JPEG 2000, HTJ2K and JPEG-LS are not forged in the page, so seven
+codestreams are embedded in `dicom-forge.js` as base64 and regenerated out of band
+by `tests/fixtures/make-codec-fixtures.mjs` (needs npm + network; `run.sh` never
+runs it). The JPEG 2000 and JPEG-LS ones are encoded by the same OpenJPEG/CharLS
+code that decodes them, so a symmetric codec bug would cancel out; what they still
+catch is the wiring (interleave, byte order, bit depth, sign, planar config,
+photometric, frame offsets), because the reference image is still computed from
+first principles. The two HTJ2K streams are stronger: OpenJPH writes them and
+OpenJPEG reads them, two independent implementations of Part 15.
 
 The corpus covers 8/12/16-bit greyscale (signed and unsigned), MONOCHROME1,
 Hounsfield/PET rescale, missing window, RGB (both planar configs), YBR_FULL,
 YBR_FULL_422, PALETTE COLOR, multi-frame, pixel-less objects (`noImage`, for presentation states), Implicit VR LE, Explicit VR BE,
-baseline JPEG, JPEG Lossless, RLE, JPEG 2000, JPEG-LS, split fragments, and
-deliberately malformed or unsupported files (truncated, MPEG-2, HTJ2K, ...).
+baseline JPEG, JPEG Lossless, RLE, JPEG 2000, HTJ2K (all three syntaxes), JPEG-LS, split fragments, and
+deliberately malformed or unsupported files (truncated, MPEG-2, unreadable HTJ2K, ...).
 
 `tests/gallery.html` draws the corpus with its reference images. Each card can
 download the `.dcm` or open it in the app via `#case=<id>`, so a bad rendering is

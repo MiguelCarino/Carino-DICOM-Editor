@@ -40,7 +40,11 @@ be called `DICOM-editor`; GitHub redirects the old name.
   a Secondary Capture, smaller than the rest of its series). JPEG Lossless with a point transform is
   reported lossy; JPEG XL, JPIP (pixels on a server) and private vendor syntaxes are named. **Decompress** (one file
   or all) rewrites the pixels as Explicit VR Little Endian with the same SOP Instance UID: exact for
-  a lossless source; a lossy source stays lossy and keeps `(0028,2110) = 01`. Compare decodes both
+  a lossless source; a lossy source stays lossy and keeps `(0028,2110) = 01`. **Compress** (one file
+  or all) goes the other way, to JPEG-LS Lossless or JPEG 2000 Lossless, and only from uncompressed or
+  lossless sources: every frame is decoded back and compared with the original values before the
+  file is changed, and the SOP Instance UID stays. High-Throughput JPEG 2000 (all three syntaxes)
+  opens, displays, redacts and decompresses like ordinary JPEG 2000. Compare decodes both
   files and says whether the pixels match even when the encodings differ, lists the compression
   facts that differ (syntax, lossless or lossy, ratio, stored size, the lossy-history tags, image
   size, Bits Stored, SOP Class, viewer warnings), and the Comparison report (a PDF download) lists all of them in a Pixel data & compression section.
@@ -177,9 +181,11 @@ then **Apply redaction** as usual: it is the same pixel write and the same undo.
 
 **Limitations:**
 
-- No decoder for HTJ2K or MPEG/H.264, so those files are refused. Files in a compressed transfer
+- No decoder for MPEG/H.264 or JPEG XL, so those files are refused. Files in a compressed transfer
   syntax the bundled writer cannot encapsulate (HTJ2K, JPEG XL, MPEG-4, HEVC, ...) are refused
-  on export rather than written as an unreadable file.
+  on export rather than written as an unreadable file: an HTJ2K file you edit is saved after
+  **Decompress** or **Compress** to a syntax it can write. Compress writes JPEG-LS and JPEG 2000
+  only, and refuses lossy sources rather than hide their loss under a lossless syntax.
 - A sequence written as `UN` with undefined length (PS3.5 6.2.2 Note 5) cannot be parsed by the
   bundled dcmjs, so such a file does not load at all.
 - 12-bit JPEG Extended decodes at 8 bits, so redacting one loses depth.
@@ -264,12 +270,15 @@ Third-party files keep their own licences and notices:
 | [`fonts/`](fonts/) | IBM Plex Mono/Sans, Red Hat Display/Text | SIL OFL 1.1 | [`fonts/OFL.txt`](fonts/OFL.txt) |
 | [`vendor/dcmjs.min.js`](vendor/dcmjs.min.js) | DICOM parser/writer | MIT | [`LICENSE-dcmjs.txt`](vendor/LICENSE-dcmjs.txt) |
 | [`vendor/lossless-min.js`](vendor/lossless-min.js) | JPEG Lossless decoder | MIT | [`LICENSE-jpeg-lossless-decoder-js.txt`](vendor/LICENSE-jpeg-lossless-decoder-js.txt) |
-| `vendor/openjpegwasm_decode.*` | JPEG 2000 decoder (codec-openjpeg 1.3.0) | MIT + BSD-2 (OpenJPEG) | [`LICENSE-codec-openjpeg.txt`](vendor/LICENSE-codec-openjpeg.txt), [`LICENSE-openjpeg.txt`](vendor/LICENSE-openjpeg.txt) |
-| `vendor/charlswasm_decode.*` | JPEG-LS decoder (codec-charls 1.2.3) | MIT + BSD-3 (CharLS) | [`LICENSE-codec-charls.txt`](vendor/LICENSE-codec-charls.txt), [`LICENSE-charls.txt`](vendor/LICENSE-charls.txt) |
+| `vendor/openjpegwasm.*` | JPEG 2000 and HTJ2K decoder, JPEG 2000 encoder (codec-openjpeg 1.3.6, OpenJPEG 2.5.4) | MIT + BSD-2 (OpenJPEG) | [`LICENSE-codec-openjpeg.txt`](vendor/LICENSE-codec-openjpeg.txt), [`LICENSE-openjpeg.txt`](vendor/LICENSE-openjpeg.txt) |
+| `vendor/charlswasm.*` | JPEG-LS decoder and encoder (codec-charls 1.2.3, CharLS 2.4.1) | MIT + BSD-3 (CharLS) | [`LICENSE-codec-charls.txt`](vendor/LICENSE-codec-charls.txt), [`LICENSE-charls.txt`](vendor/LICENSE-charls.txt) |
 
 The WASM codecs have two notices each: one for the MIT wrapper and one for the BSD
 library compiled into the `.wasm`. [`vendor/README.md`](vendor/README.md) explains how to
 keep them up to date. Any fork or repackaging must include these notices.
+[`sbom.spdx.json`](sbom.spdx.json) lists every third-party component, including the libraries
+compiled into the `.wasm` files and the OCR engine, as an SPDX 2.3 SBOM with a checksum for each
+shipped file; `node tools/make-sbom.mjs --check` says whether it still matches the tree.
 
 MPL is file-level copyleft. Changes to these files must stay MPL, but the tool can be
 combined with proprietary software. Source files carry the standard header:

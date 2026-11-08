@@ -3,6 +3,46 @@
 All notable changes to Carino DICOM Editor. Versions follow [Semantic Versioning](https://semver.org/).
 Licensed under **AGPL-3.0-or-later** (see [LICENSE](LICENSE)).
 
+## [Unreleased]
+
+### Added
+- **High-Throughput JPEG 2000 opens.** All three HTJ2K syntaxes (`.201` Lossless, `.202`
+  Lossless RPCL, `.203`) display, redact, rotate/flip and decompress like ordinary JPEG 2000,
+  where they were refused. OpenJPEG has decoded Part 15 since 2.5.0, so no new codec is shipped:
+  the syntaxes go to the same decoder, and a failure says "High-Throughput JPEG 2000" rather than
+  blaming a Part 1 codestream. The corpus gains three HTJ2K files encoded by OpenJPH, a different
+  implementation of Part 15 than the one that reads them, plus an unreadable one.
+- **Compress, the way forward from Decompress.** The Image edits card's Compression line gets a
+  target (JPEG-LS Lossless or JPEG 2000 Lossless) and Compress / All *n*. Only uncompressed or
+  losslessly compressed files are offered; lossy ones are refused rather than relabelled under a
+  lossless syntax. Every frame is decoded back and compared sample for sample with the values it
+  came from before the file changes, so a failure leaves the file as it was. The SOP Instance UID
+  stays, `(0028,2110)` is left alone (a lossy past stays recorded), Undo restores the original,
+  and JPEG 2000 colour is labelled `YBR_RCT`, since the encoder applies the reversible colour
+  transform. JPEG-LS refuses signed pixels (JPEG 2000 takes them), and both refuse values that do
+  not fit in Bits Stored rather than drop the extra bits. Translated in es / pt-BR / ja / ru.
+
+- **`sbom.spdx.json`, a software bill of materials.** SPDX 2.3: every vendored bundle, the C
+  libraries compiled into the WebAssembly (OpenJPEG 2.5.4, CharLS 2.4.1, Tesseract and its eight
+  image libraries), the OCR model and the fonts, with purl/CPE identifiers and a SHA-1 and SHA-256
+  for each of the 35 shipped files. `tools/make-sbom.mjs` writes it; `--check` fails when a vendored
+  file changed and the SBOM did not. Vendored bundles are invisible to npm and Dependabot, which is
+  the gap it fills.
+
+### Changed
+- **`vendor/`: the full JPEG 2000 and JPEG-LS builds replace the decode-only ones**
+  (`openjpegwasm.*`, `charlswasm.*`), since Compress calls their encoders: 117 KB and 72 KB more
+  WebAssembly, loaded only when a file of that syntax is opened or compressed.
+  **codec-openjpeg 1.3.0 → 1.3.6**, i.e. OpenJPEG 2.5.0 → 2.5.4, which carries the HT decoder's
+  fixes since 2.5.0. Its tarball ships no LICENSE; the MIT text is the monorepo's, unchanged.
+
+### Fixed
+- **HTJ2K `.203` was treated as ordinary JPEG 2000.** Only `.201` and `.202` were flagged as
+  High-Throughput, so a `.203` file skipped the HTJ2K branch and reached the decoder on its magic
+  bytes alone, and any failure was reported as a broken JPEG 2000 codestream.
+- **A lossy HTJ2K decompressed with `(0028,2114) = ISO_15444_1`.** It is `ISO_15444_15` for
+  Part 15 (PS3.3 C.7.6.1.1.5.1).
+
 ## [1.2.0] — 2026-10-28
 
 ### Changed

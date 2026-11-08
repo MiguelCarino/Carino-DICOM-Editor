@@ -86,6 +86,11 @@ jobs:
         with:
           node-version: "20"
 
+      # A release whose vendored bytes no longer match sbom.spdx.json would ship
+      # a bill of materials describing a different build. Node only, no install.
+      - name: Check the SBOM matches vendor/ and fonts/
+        run: node tools/make-sbom.mjs --check
+
       # electron-builder needs rpmbuild to emit the .rpm on the Linux runner.
       - name: Install Linux packaging tools
         if: runner.os == 'Linux'

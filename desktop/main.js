@@ -4,11 +4,11 @@
    A window around the editor's own web UI, and nothing more. Three
    decisions carry the whole design of this file.
 
-   It does NOT load the page over file://. vendor/openjpegwasm_decode.js
-   and vendor/charlswasm_decode.js are emscripten output that reaches for
+   It does NOT load the page over file://. vendor/openjpegwasm.js
+   and vendor/charlswasm.js are emscripten output that reaches for
    fetch, WebAssembly.instantiateStreaming and XMLHttpRequest, all of
-   which a file:// origin refuses — that is JPEG 2000 and JPEG-LS, i.e.
-   the compressed transfer syntaxes, silently gone. So the bundle is
+   which a file:// origin refuses — that is JPEG 2000, HTJ2K and
+   JPEG-LS, i.e. the compressed transfer syntaxes, silently gone. So the bundle is
    served over a custom app:// scheme registered as standard + secure,
    which also keeps localStorage, crypto.subtle and CSP behaving exactly
    as they do on dcm.carino.systems.
