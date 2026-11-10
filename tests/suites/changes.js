@@ -69,6 +69,7 @@
     $('changeReportBtn').click();
     await wait(() => !$('rpOverlay').hidden && !$('rpDownload').disabled);
     ok('Export ▸ Change report opens the preview, saving nothing', !$('rpOverlay').hidden && saved.length === n0);
+    $('rpFormat')?.querySelector('[data-format="pdf"]')?.click();   // a visitor's remembered HTML choice aside
     ok('the preview offers the scope and the originals switch',
        $('rpOpts').querySelectorAll('input[type=radio]').length === 2 && $('rpOpts').querySelectorAll('input[type=checkbox]').length === 1);
     ok('named for all the files', $('rpName').textContent === 'dicom-edited_DICOM-Change-Report.pdf', $('rpName').textContent);
@@ -80,11 +81,10 @@
     await wait(() => saved.length > n0, 30000);
     const got = saved[n0];
     ok('Download saves the PDF the preview named', got && got.name === 'first_DICOM-Change-Report.pdf' && got.blob.type === 'application/pdf', got && got.name);
-    ok('and closes the preview', $('rpOverlay').hidden);
+    await wait(() => !$('rpDownload').disabled, 5000);
+    ok('and the preview stays open, ready again', !$('rpOverlay').hidden && !$('rpDownload').disabled);
 
     // Close drops it without saving.
-    $('changeReportBtn').click();
-    await wait(() => !$('rpOverlay').hidden);
     $('rpClose').click();
     ok('Close saves nothing', $('rpOverlay').hidden && saved.length === n0 + 1);
   } catch (e) {

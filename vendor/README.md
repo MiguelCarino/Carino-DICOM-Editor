@@ -28,7 +28,7 @@ its dashboard; the two are kept byte-identical on purpose.
 | `openjpegwasm.wasm` | [@cornerstonejs/codec-openjpeg](https://github.com/cornerstonejs/codecs) | 1.3.6 (OpenJPEG 2.5.4) | MIT | `LICENSE-codec-openjpeg.txt` |
 | `charlswasm.js` | [@cornerstonejs/codec-charls](https://github.com/cornerstonejs/codecs) | 1.2.3 (CharLS 2.4.1) | MIT | `LICENSE-codec-charls.txt` |
 | `charlswasm.wasm` | [@cornerstonejs/codec-charls](https://github.com/cornerstonejs/codecs) | 1.2.3 (CharLS 2.4.1) | MIT | `LICENSE-codec-charls.txt` |
-| `html2canvas.min.js` | [html2canvas](https://github.com/niklasvh/html2canvas) | 1.4.1 | MIT | `LICENSE-html2canvas.txt` |
+| `../carino-html2canvas.js` (fleet copy) | [html2canvas](https://github.com/niklasvh/html2canvas) | 1.4.1 | MIT | `LICENSE-html2canvas.txt` |
 
 The two `*wasm.*` pairs are the JPEG 2000 and JPEG-LS codecs, loaded lazily and
 only when a file of that transfer syntax is opened or **Compress** is pressed.
@@ -51,13 +51,15 @@ would not encapsulate it either).
 Do not rename the four files — `locateFile` is what resolves the `.wasm` beside
 its loader, and keeping upstream's names is what keeps a refresh diffable.
 
-`html2canvas.min.js` draws the printed reports (tag dump, Overview, Compare)
-page by page, so `js/render.js` can write them into a PDF and download it
-instead of opening the print dialog. Pages are pictures of the browser's own
-layout, which is what keeps Japanese, Cyrillic and every patient-name script
-right without shipping a font. It is the package's own `dist/html2canvas.min.js`,
-unmodified, loaded only when a report is made. tslib's helpers are compiled into
-it; their 0BSD notice is the second comment in the file and stays there.
+html2canvas draws the reports (tag dump, Overview, Compare, Change report) page
+by page into their PDF. It is no longer vendored here: the fleet's shared report
+engine (`../carino-pdf.js`, canonical in Branding) loads its own copy,
+`../carino-html2canvas.js`, which propagate.sh keeps beside it. That copy is the
+package's own `dist/html2canvas.min.js`, unmodified (tslib's 0BSD notice is the
+second comment in the file); its licence text stays here as
+`LICENSE-html2canvas.txt`. Pages are pictures of the browser's own layout, which
+is what keeps Japanese, Cyrillic and every patient-name script right without
+shipping a font.
 
 Those MIT notices cover the emscripten wrappers only. The C libraries compiled
 *into* the `.wasm` are separate works under separate terms, and shipping a
@@ -178,10 +180,8 @@ new version in it: it round-trips every checked-in codestream through the new
 decoder. Check the OpenJPEG version the module reports (`getVersion()`) against
 the table above.
 
-    npm pack html2canvas@<version>
-    tar xzf html2canvas-<version>.tgz
-    cp package/dist/html2canvas.min.js .
-    cp package/LICENSE LICENSE-html2canvas.txt
+    # html2canvas: refreshed in Branding (carino-html2canvas.js) and propagated;
+    # only its licence text lives here.
 
 OCR, from the same tarballs and the same commits the tables above name:
 

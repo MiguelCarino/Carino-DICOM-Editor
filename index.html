@@ -27,6 +27,7 @@
   <script src="carino-navbar.js" data-app="DCM" data-repo="Carino-DICOM-Editor" data-license="MPL-2.0" defer></script>
   <script src="carino-theme.js" data-mark="logo.svg" data-mark-color="logo-color.svg" defer></script>
   <script src="carino-ui.js" defer></script>
+  <script src="carino-pdf.js" defer></script>
   <script src="carino-lang.js" defer></script>
   <script src="i18n.js" defer></script>
   <!-- Theme before first paint, so neither theme flashes the other:
@@ -999,7 +1000,7 @@
         <p class="rpv-name" id="rpName"></p>
         <div class="rpv-actions">
           <button class="btn" id="rpPrint" type="button" disabled data-i18n>🖨 Print</button>
-          <button class="btn primary" id="rpDownload" type="button" disabled data-i18n>⬇ Download PDF</button>
+          <button class="btn btn-primary primary" id="rpDownload" type="button" disabled>Download PDF</button>
         </div>
       </aside>
       <div class="rpv-stage rpv-fit" id="rpStage"><iframe id="rpFrame" class="rpv-frame" title="Report preview"></iframe></div>

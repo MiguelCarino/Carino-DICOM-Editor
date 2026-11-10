@@ -50,7 +50,9 @@ Not listed and not code to study:
 | js/ocr.js | ai | | | | Review fixes: worker start race, folding, separator-required forms, extra tags, order-independent merge. |
 | js/overview.js | ai | | | | Overview report downloads as a PDF named after the file. |
 | js/preview.js | ai | | | | Review fixes: decode guards, fragment grouping, JPEG Lossless checks, palette reading, J2K label. JPEG Lossless point transform undone after the vendored decoder (which ignores Pt); Encapsulated Uncompressed (.98) decoded; refusal names for JPEG XL, HTJ2K .203, J2K Part 2, video .x.1, JPIP, retired JPEG, GE private. |
-| js/render.js | ai | | | | Reports download as PDF: off-screen layout with the app fonts, page breaks on row edges, html2canvas pages, in-house PDF writer (FlateDecode). No print dialog. |
+| js/render.js | ai | | | | Reports download as PDF or HTML: carinoReportHtml (with its own @page) to the fleet engine carino-pdf.js (CarinoPdf.pdf / htmlFile); the in-house PDF writer was removed (2026-11-10). No print dialog. |
+| js/report-preview.js | ai | | | | File PDF | HTML switch above the file name, Download labelled by it, busy state in the status, dialog stays open after Download; page lines from CarinoPdf.pageBreaks. |
+| tests/node/report.test.mjs | ai | | | | New: node unit tests for the report file wiring (names, @page, preview cuts, markup, i18n, engine removal). |
 | js/selftest.js | ai | | | | pdf suite added to the browser self-test. |
 | js/sr-viewer.js | ai | | | | Review fixes: case-tolerant item lookup, all 88.* classes, more value types. |
 | js/utils.js | ai | | | | Review fixes: editKey, parseByVR checks, AT display, UID prefix scope, edit-keeping reseed. |
@@ -60,7 +62,7 @@ Not listed and not code to study:
 | tests/fixtures/worklist-frame.js | ai | | | | New: stand-in worklist for the eyephoto suite. |
 | tests/run.sh | ai | | | | Probe as a file at the top of the body; bounded, retried Chromium runs. |
 | tests/suites/compression.js | ai | | | | New: detection, decompress round trip of signed JPEG-LS, lossy flags, undo, card UI; syntax kinds and refusals, JPEG Lossless Pt = 2 (libjpeg-turbo fixture), J2K signedness, rendered/reduced copies, .98 unwrap. |
-| tests/suites/pdf.js | ai | | | | New: PDF structure and xref, row-edge page breaks, text spelled out for html2canvas, the three report buttons. |
+| tests/suites/pdf.js | ai | | | | PDF structure and xref via CarinoPdf, the HTML file, preview page lines never through a row, the three report buttons in both formats. |
 | tests/suites/review.js | ai | | | | New: regression suite for the October 2026 review fixes. |
 | tools/make-deid-profile.mjs | ai | | | | Merge-never-lose for option columns; hand rows; ~/.cache scratch. |
 | tests/suites/boot.js | ai | | | | i18n drift ceiling raised for the review strings. |

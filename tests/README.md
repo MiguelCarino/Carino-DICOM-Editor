@@ -4,6 +4,7 @@
 ./tests/run.sh                  # every suite in tests/suites/
 ./tests/run.sh pixels redact    # named suites only
 CHROME=google-chrome ./tests/run.sh
+node --test tests/node/*.test.mjs   # unit tests without a browser (report file wiring)
 ```
 
 Needs `python3` and a headless Chromium (`chromium-browser` by default; override

@@ -6,6 +6,14 @@ Licensed under **AGPL-3.0-or-later** (see [LICENSE](LICENSE)).
 ## [Unreleased]
 
 ### Added
+- **Reports as PDF or HTML.** Every report preview (tag dump, Overview, Comparison, Change report)
+  has a File PDF | HTML switch above the file name; the one Download button and the file name
+  follow it, and the choice is remembered. The HTML file is the report document itself (inline
+  styles, logo written in, no script), so it opens offline, on screen with the page's 15 mm
+  margins at A4 width (a screen-only rule; print and PDF keep @page). The PDF now comes from the fleet's
+  shared engine (`carino-pdf.js`, with `carino-html2canvas.js` beside it); the app's own copy of
+  that engine and `vendor/html2canvas.min.js` are gone. Download keeps the preview open and says
+  "Creating the PDF…" while it works.
 - **Change report.** Export ▸ 📋 Change report makes a PDF of what this session changed, for all
   loaded files or the one on screen. Each changed file gets its **source** (the file as loaded,
   read again: path, size, SHA-256, transfer syntax, SOP Instance UID) beside its **output** (the

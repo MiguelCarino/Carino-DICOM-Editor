@@ -65,7 +65,7 @@ const PACKAGES = [
     cpe: 'cpe:2.3:a:team-charls:charls:2.4.1:*:*:*:*:*:*:*', within: 'codec-charls',
     comment: 'version as reported by the module (getVersion)' },
   { id: 'html2canvas', name: 'html2canvas', version: '1.4.1', license: 'MIT', ...npm('html2canvas', '1.4.1'),
-    files: ['vendor/html2canvas.min.js'] },
+    files: ['carino-html2canvas.js'], comment: 'fleet copy loaded by carino-pdf.js (canonical in Branding)' },
   { id: 'tslib', name: 'tslib', version: 'NOASSERTION', license: '0BSD', purl: 'pkg:npm/tslib',
     downloadLocation: 'git+https://github.com/microsoft/tslib', within: 'html2canvas' },
   { id: 'tesseract-js', name: 'tesseract.js', version: '7.0.0', license: 'Apache-2.0', ...npm('tesseract.js', '7.0.0'),
