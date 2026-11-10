@@ -22,10 +22,8 @@ const PDF_CSS_H = Math.floor((PDF_PAGE.h - 2 * PDF_PAGE.margin) / PDF_PT_PER_PX)
 const PDF_SCALE = 2;              // canvas pixels per CSS pixel: about 190 dpi on paper
 const PDF_CHUNK_PAGES = 4;        // pages drawn per html2canvas pass; keeps each canvas inside Safari's area limit
 
-// Make a branded PDF around a body-HTML fragment and download it. No print dialog: the pages are
-// drawn by html2canvas from the browser's own layout (so every script renders as on screen) and
-// written into the PDF here. fileBase prefixes the file name. Resolves once the download starts.
-async function carinoBrandedPrint({ title, subtitle, meta, body, fileBase }) {
+// The branded report document around a body-HTML fragment: what the preview shows and the PDF draws.
+function carinoReportHtml({ title, subtitle, meta, body }) {
   const logo = CARINO_LOGO_URI ? `<img class="ph-logo" src="${CARINO_LOGO_URI}" alt="Carino Systems">` : '';
   const metaHtml = meta ? `<div class="ph-meta">${meta}</div>` : '';
   const doc = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${_pesc(title)}</title><style>
@@ -69,9 +67,16 @@ async function carinoBrandedPrint({ title, subtitle, meta, body, fileBase }) {
     ${body}
     <footer>Generated locally by Carino Systems — no data left this device.</footer>
   </body></html>`;
+  return doc;
+}
+// Letters and digits of any script survive; anything a file system might refuse becomes '-'.
+const reportPdfName = ({ title, fileBase }) => [fileBase, title].filter(Boolean).join('_').replace(/[^\p{L}\p{N}_.-]+/gu, '-') + '.pdf';
 
-  // Letters and digits of any script survive; anything a file system might refuse becomes '-'.
-  const name = [fileBase, title].filter(Boolean).join('_').replace(/[^\p{L}\p{N}_.-]+/gu, '-') + '.pdf';
+// Make the PDF and download it. No print dialog: the pages are drawn by html2canvas from the
+// browser's own layout (so every script renders as on screen) and written into the PDF here.
+// fileBase prefixes the file name. Resolves once the download starts.
+async function carinoPdfDownload(opts) {
+  const doc = carinoReportHtml(opts), title = opts.title, name = reportPdfName(opts);
   if (window.toast) toast(T('Creating the PDF…'));
   try {
     saveBlob(await reportToPdf(doc, title), name);
@@ -80,6 +85,10 @@ async function carinoBrandedPrint({ title, subtitle, meta, body, fileBase }) {
     if (window.toast) toast(`${T('Could not create the PDF:')} ${(e && e.message) || e}`, 5000);
   }
 }
+window.carinoPdfDownload = carinoPdfDownload;
+
+// Every report button: the report is shown first, laid out as the PDF will be, and written only on Download.
+function carinoBrandedPrint(opts) { return openReportPreview({ build: () => opts }); }
 window.carinoBrandedPrint = carinoBrandedPrint;
 
 // Lay the report out in an off-screen iframe at the PDF's width, cut it into pages, draw them and
@@ -199,10 +208,13 @@ function pdfSpellOutText(d) {
 // section, paragraph, picture or note that still fits, so no page cuts through a line of text.
 // Headings and table header rows are never an end, so a page never finishes on one. A single
 // block taller than a page is cut where the page runs out.
-function pdfPageBreaks(d) {
-  const total = d.documentElement.getBoundingClientRect().height;
+// box: where the report's content sits in d ({ top, height }); the whole document by default, the
+// padded page in the preview.
+function pdfPageBreaks(d, box) {
+  const top0 = box ? box.top : 0;
+  const total = box ? box.height : d.documentElement.getBoundingClientRect().height;
   const ends = [...d.querySelectorAll('header, section, table, tbody > tr, p, .adv, img, footer')]
-    .map(el => el.getBoundingClientRect().bottom)
+    .map(el => el.getBoundingClientRect().bottom - top0)
     .sort((a, b) => a - b);
   const breaks = [0];
   let top = 0;

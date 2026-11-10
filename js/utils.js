@@ -392,6 +392,7 @@ function applyPrefixToAll(newP) {
       if (mi?.Value) mi.Value = mi.Value.map(rewrite);
     }
     reseedAllPending();
+    noteChangeAll(files, 'uid', `UID root moved: ${oldP || '(none)'} → ${newP} (${n} UIDs across ${m} files)`);
     sharedUIDPrefix = newP;
     uidPrefixInput.value = newP;
     uidPatternDisplay.textContent = `${newP}.*`;

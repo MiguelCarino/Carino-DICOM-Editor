@@ -1,6 +1,7 @@
-// Reports download as PDF files; nothing opens the print dialog.
+// Reports download as PDF files; nothing opens the print dialog. Every report button shows the
+// report first (js/report-preview.js); its Download writes the PDF.
 //
-// carinoBrandedPrint lays a report out at the PDF's width, cuts it into A4 pages,
+// carinoPdfDownload lays a report out at the PDF's width, cuts it into A4 pages,
 // draws each with html2canvas and writes the PDF itself. What is worth holding:
 // the bytes are a PDF a reader can walk (every xref offset lands on its object),
 // one picture per page, page ends that never cut through a table row, and each
@@ -30,13 +31,13 @@
   });
 
   try {
-    // ---- a long report straight through carinoBrandedPrint ----------------------
+    // ---- a long report straight through carinoPdfDownload -----------------------
     const rows = Array.from({ length: 260 }, (_, i) =>
       `<tr><td class="c-tag">(0010,${String(i).padStart(4, '0')})</td><td class="c-desc">Row ${i}</td><td class="c-vr">PN</td><td>山田^太郎 · Иванов ${i}</td></tr>`).join('');
     const body = `<section class="tagsec"><h2>All DICOM tags — 260</h2><table class="tags">
       <thead><tr><th>Tag</th><th>Description</th><th>VR</th><th>Value</th></tr></thead><tbody>${rows}</tbody></table></section>`;
     const pending = nextSave();
-    await carinoBrandedPrint({ title: 'DICOM Tag Dump', subtitle: 'test · 260 tags', meta: 'Carino DICOM Editor', body, fileBase: 'CT 患者 01' });
+    await carinoPdfDownload({ title: 'DICOM Tag Dump', subtitle: 'test · 260 tags', meta: 'Carino DICOM Editor', body, fileBase: 'CT 患者 01' });
     const got = await pending;
     ok('a report becomes a download, not a print dialog', !!got, toasts.join(' | '));
     if (got) {
@@ -112,23 +113,30 @@
     ]);
     ok('two files load', files.length === 2, String(files.length));
 
-    for (const [label, click, want] of [
-      ['Export ▸ PDF', () => $('printTagsBtn').click(), 'first_DICOM-Tag-Dump.pdf'],
-      ['the Overview\'s PDF', () => $('ovPrintBtn').click(), 'first_DICOM-Study-Report.pdf'],
-    ]) {
-      const p = nextSave();
+    // A button opens the preview with nothing saved; the preview's Download saves the PDF it named.
+    const previewThenSave = async (label, click, want) => {
+      const n0 = saved.length;
       click();
+      const t0 = Date.now();
+      while (($('rpOverlay').hidden || $('rpDownload').disabled) && Date.now() - t0 < 20000)
+        await new Promise(r => setTimeout(r, 50));
+      const fr = $('rpFrame').contentDocument;
+      ok(`${label} opens the preview first, saving nothing`, !$('rpOverlay').hidden && saved.length === n0);
+      ok(`${label}: the preview shows the report and names the file`,
+         !!fr?.querySelector('header.ph h1') && $('rpName').textContent === want, $('rpName').textContent);
+      ok(`${label}: the preview counts its pages`, /\d/.test($('rpStatus').textContent), $('rpStatus').textContent);
+      const p = nextSave();
+      $('rpDownload').click();
       const r = await p;
       ok(`${label} downloads ${want}`, r && r.name === want && r.blob.type === 'application/pdf', r && r.name);
-    }
+      ok(`${label}: Download closes the preview`, $('rpOverlay').hidden);
+    };
+    await previewThenSave('Export ▸ PDF', () => $('printTagsBtn').click(), 'first_DICOM-Tag-Dump.pdf');
+    await previewThenSave('the Overview\'s PDF', () => $('ovPrintBtn').click(), 'first_DICOM-Study-Report.pdf');
     $('compareWith').value = '1';
     $('compareWith').dispatchEvent(new Event('change'));
     if (compareEntry()) {
-      const p = nextSave();
-      $('cmpReport').click();
-      const r = await p;
-      ok('the Comparison report downloads first_vs_second_DICOM-Comparison-Report.pdf',
-         r && r.name === 'first_vs_second_DICOM-Comparison-Report.pdf', r && r.name);
+      await previewThenSave('the Comparison report', () => $('cmpReport').click(), 'first_vs_second_DICOM-Comparison-Report.pdf');
     } else {
       ok('a comparison could be opened for the report button', false);
     }

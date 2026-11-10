@@ -6,6 +6,18 @@ Licensed under **AGPL-3.0-or-later** (see [LICENSE](LICENSE)).
 ## [Unreleased]
 
 ### Added
+- **Change report.** Export ▸ 📋 Change report makes a PDF of what this session changed, for all
+  loaded files or the one on screen. Each changed file gets its **source** (the file as loaded,
+  read again: path, size, SHA-256, transfer syntax, SOP Instance UID) beside its **output** (the
+  file a download writes now, built and read back: name, size, SHA-256, transfer syntax, UID,
+  whether Pixel Data was rewritten), the **actions** taken in order (compress, decompress,
+  rotate/flip, invert, redaction, de-identification, fake patient, swap, UID root; an undone
+  rotate or redaction leaves the list), and every **tag difference** (changed, added, removed,
+  with before and after, sequences walked). Untouched files are listed apart. A switch hides the
+  before-values that could name the patient; it starts off after Anonymize.
+- **Every PDF report is previewed first.** The tag dump, the Overview's study report, the
+  Comparison report and the Change report open in a preview laid out exactly as the PDF (same
+  width, margins and page ends, marked and counted); ⬇ Download PDF writes it, Close drops it.
 - **High-Throughput JPEG 2000 opens.** All three HTJ2K syntaxes (`.201` Lossless, `.202`
   Lossless RPCL, `.203`) display, redact, rotate/flip and decompress like ordinary JPEG 2000,
   where they were refused. OpenJPEG has decoded Part 15 since 2.5.0, so no new codec is shipped:

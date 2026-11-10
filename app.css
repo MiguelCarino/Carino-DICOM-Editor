@@ -1524,6 +1524,8 @@
 
     /* ---- Swap patients dialog ---- */
     .confirm-box.swap-box { max-width: 560px; max-height: 90vh; overflow-y: auto; }
+    /* Report preview (js/report-preview.js): the layout is the fleet's .rpv (carino-ui.css 18b). */
+    .rpv-actions .btn { justify-content: center; }
     .swap-title { font: 700 var(--fs-sec) var(--sans); color: var(--text); margin-bottom: 8px; }
     .swap-note { font: 400 var(--fs-sm) var(--sans); color: var(--text-sec); line-height: 1.5; margin: 6px 0; }
     .swap-table-wrap { overflow-x: auto; margin: 10px 0; }

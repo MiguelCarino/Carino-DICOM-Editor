@@ -521,6 +521,7 @@ async function runDecompress(list) {
       const res = await decompressDicom(entry);
       if (res.error) { log(`✗ ${entry.name}: ${res.error}`); continue; }
       done++; before += res.before; after += res.after;
+      noteChange(entry, 'codec', `Decompressed: ${res.from} → Explicit VR Little Endian` + (res.lossless === false ? ' (lossy source: lost detail stays lost)' : ''));
       log(`⇲ ${entry.name}: ${res.from} → Explicit VR Little Endian` + (res.lossless === false ? ` (${T('lossy source: lost detail stays lost')})` : ''));
     }
     const mb = n => (n / 1048576).toFixed(1);
@@ -550,6 +551,7 @@ async function runCompress(list, target) {
       const res = await compressDicom(entry, target);
       if (res.error) { log(`✗ ${entry.name}: ${res.error}`); continue; }
       done++; before += res.before; after += res.after;
+      noteChange(entry, 'codec', `Compressed losslessly: ${res.from} → ${res.to} (every frame decoded back and matched)`);
       log(`⇱ ${entry.name}: ${res.from} → ${res.to}`);
     }
     const mb = n => (n / 1048576).toFixed(1);
@@ -587,6 +589,8 @@ async function runImgEdit(opKey) {
     const res = await applyPixelTransform(entry, opKey);
     if (res.error) { log(`✗ ${entry.name}: ${res.error}`); toast(res.error); return; }
     const label = T(PIXEL_OPS[opKey].label);
+    noteChange(entry, 'pixel', `${PIXEL_OPS[opKey].label}: ${res.cols}×${res.rows}, ${res.frames} frame(s)` +
+      (res.unmoved?.length ? `; not moved with the pixels: ${res.unmoved.join(', ')}` : ''));
     log(`⟳ ${entry.name}: ${label} — ${res.cols}×${res.rows}, ${TF('{n} frame(s)', { n: res.frames })}`);
     if (res.unmoved?.length)
       log(`⚠ ${T('Not moved with the pixels:')} ${res.unmoved.join(', ')}`);
@@ -625,6 +629,7 @@ $('imgInvert')?.addEventListener('click', () => {
   if (!entry) return;
   const res = invertPhotometric(entry);
   if (res.error) { toast(res.error); return; }
+  noteChange(entry, 'invert', `Inverted: (0028,0004) Photometric Interpretation → ${res.pi}`);
   log(`◐ ${entry.name}: (0028,0004) → ${res.pi}`);
   renderTable();
   if (typeof renderOverview === 'function') renderOverview();
@@ -636,6 +641,7 @@ $('imgInvert')?.addEventListener('click', () => {
 imgEditUndo?.addEventListener('click', () => {
   const entry = files[currentFileIdx];
   if (!entry || !undoPixelTransform(entry)) return;
+  unnoteChange(entry, 'pixel');
   log(`↺ ${entry.name}: ${T('image edit undone (this session only).')}`);
   renderTable();
   if (typeof renderOverview === 'function') renderOverview();
@@ -895,6 +901,7 @@ $('redactApply')?.addEventListener('click', () => {
     if (res.error) { log(`✗ ${entry.name}: ${res.error}`); toast(res.error); return; }
     const msg = T('Redacted {n} region(s) across {m} frame(s) — pixels overwritten.')
       .replace('{n}', res.boxes).replace('{m}', res.frames);
+    noteChange(entry, 'redact', `Redacted ${res.boxes} region(s) across ${res.frames} frame(s), fill ${fill}: pixels overwritten`);
     log(`▣ ${entry.name}: ${msg}`);
     toast(msg);
     closeRedactWorkspace();
@@ -915,6 +922,7 @@ $('redactApply')?.addEventListener('click', () => {
 imgRedactUndo?.addEventListener('click', () => {
   const entry = files[currentFileIdx];
   if (!entry || !undoRedaction(entry)) return;
+  unnoteChange(entry, 'redact');
   const msg = T('Redaction undone (this session only).');
   log(`↺ ${entry.name}: ${msg}`);
   toast(msg);
