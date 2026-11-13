@@ -1,3 +1,7 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
+
 // Regenerates ../deid-profile.js. Run from the repo root:
 //
 //   mkdir -p ~/.cache/deid
@@ -113,7 +117,11 @@ const optMaps = OPTS.map(o => {
 
 const kept = o => optMaps.find(([n]) => n === o)[1].filter(([, v]) => v === 'K').length;
 
-let out = `/* =====================================================================
+let out = `/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
+
+/* =====================================================================
    DICOM PS3.15 Table E.1-1 — Basic Application Level Confidentiality Profile,
    with the optional profiles that share the table.
    DO NOT hand-edit; regenerate with tools/make-deid-profile.mjs.

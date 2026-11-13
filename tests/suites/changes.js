@@ -1,3 +1,7 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
+
 // The change report: what a session did to the loaded files, source against output.
 //
 // What has to hold: a typed edit, an image action and an untouched file each land where they

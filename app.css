@@ -1,3 +1,7 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
+
 /* Carino DICOM Editor styles: tokens, layout, tabs, overlays; the narrow layout must stay last. */
     /* Branding's tokens (--bg, --accent, --text*, --border, --sans, --mono, --fs-*) come from
        carino-ui.css; only dcm's own extras are declared here. */

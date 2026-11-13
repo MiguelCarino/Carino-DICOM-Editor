@@ -1,3 +1,7 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
+
 // Rendering: branded reports (PDF or HTML), file compare, the tag table and dataset walk/normalize helpers.
 // ---- Branded report ----
 // Shared Carino report layout. Self-contained (inline CSS, logo as data URI; the app's own fonts are linked

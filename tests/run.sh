@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 # Runs the suites in tests/suites against the real index.html in headless Chromium.
 #
 #   ./tests/run.sh              # everything
@@ -75,7 +79,7 @@ PY
     # A suite marked '@realtime' in its first lines waits on a Web Worker, which the
     # virtual clock does not wait for; tests/realtime.py drives it on the real clock
     # (and checks that no request, the workers' included, leaves the origin).
-    if head -5 "$src" | grep -q '@realtime'; then
+    if head -10 "$src" | grep -q '@realtime'; then
         results=$(python3 tests/realtime.py "$CHROME" "http://127.0.0.1:$PORT/$RUNFILE" "${REALTIME_TIMEOUT:-180}")
         dom=""
         case "$results" in BOOTERR:*) dom="<pre id=\"BOOTERR\">${results#BOOTERR:}</pre>"; results="" ;; esac

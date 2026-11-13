@@ -1,3 +1,7 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
+
 // Report preview: every report is shown before it is written, as Topo's report dialog does.
 // The frame holds the very document the file is made from (carinoReportHtml), laid out at the
 // paper's printable width on a sheet with its margins (REPORT_PAGE, the report's own @page rule),

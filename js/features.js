@@ -1,3 +1,7 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
+
 // Editor features: undo/redo, file browser and series sorting, window/level, image edits,
 // redaction workspace, add tag, JSON/CSV export, shortcuts and Create DICOM.
 

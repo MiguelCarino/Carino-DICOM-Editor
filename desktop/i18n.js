@@ -1,3 +1,7 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
+
 /* ============================================================
    i18n for the Electron shell (main process).
    ------------------------------------------------------------
@@ -30,7 +34,7 @@ const STRINGS = {
         'Check for updates now': 'Buscar actualizaciones ahora',
         'Check for updates automatically': 'Buscar actualizaciones automáticamente',
         'Carino DICOM Editor on GitHub': 'Carino DICOM Editor en GitHub',
-        'Licence (AGPL-3.0)': 'Licencia (AGPL-3.0)',
+        'Licence (MPL-2.0)': 'Licencia (MPL-2.0)',
         // Result of a check the user asked for by hand
         'No update available': 'No hay actualizaciones',
         'You are running the newest version, {version}.': 'Estás usando la versión más reciente, {version}.',
@@ -49,7 +53,7 @@ const STRINGS = {
         'Check for updates now': 'Procurar atualizações agora',
         'Check for updates automatically': 'Procurar atualizações automaticamente',
         'Carino DICOM Editor on GitHub': 'Carino DICOM Editor no GitHub',
-        'Licence (AGPL-3.0)': 'Licença (AGPL-3.0)',
+        'Licence (MPL-2.0)': 'Licença (MPL-2.0)',
         'No update available': 'Nenhuma atualização disponível',
         'You are running the newest version, {version}.': 'Você está usando a versão mais recente, {version}.',
         'An update is available': 'Há uma atualização disponível',
@@ -67,7 +71,7 @@ const STRINGS = {
         'Check for updates now': '今すぐ更新を確認',
         'Check for updates automatically': '自動的に更新を確認',
         'Carino DICOM Editor on GitHub': 'Carino DICOM Editor を GitHub で見る',
-        'Licence (AGPL-3.0)': 'ライセンス (AGPL-3.0)',
+        'Licence (MPL-2.0)': 'ライセンス (MPL-2.0)',
         'No update available': '更新はありません',
         'You are running the newest version, {version}.': '最新バージョン {version} を使用しています。',
         'An update is available': '更新があります',
@@ -85,7 +89,7 @@ const STRINGS = {
         'Check for updates now': 'Проверить обновления сейчас',
         'Check for updates automatically': 'Проверять обновления автоматически',
         'Carino DICOM Editor on GitHub': 'Carino DICOM Editor на GitHub',
-        'Licence (AGPL-3.0)': 'Лицензия (AGPL-3.0)',
+        'Licence (MPL-2.0)': 'Лицензия (MPL-2.0)',
         'No update available': 'Обновлений нет',
         'You are running the newest version, {version}.': 'Установлена самая новая версия, {version}.',
         'An update is available': 'Доступно обновление',

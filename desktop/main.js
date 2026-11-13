@@ -1,3 +1,7 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
+
 /* ============================================================
    Carino DICOM Editor desktop — Electron shell.
    ------------------------------------------------------------
@@ -501,7 +505,7 @@ function buildAppMenu() {
         },
         { type: "separator" },
         { label: t("Carino DICOM Editor on GitHub"), click: () => openExternally(REPO_URL) },
-        { label: t("Licence (AGPL-3.0)"), click: () => openExternally(LICENCE_URL) },
+        { label: t("Licence (MPL-2.0)"), click: () => openExternally(LICENCE_URL) },
       ],
     },
   ]);

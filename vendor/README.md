@@ -80,13 +80,13 @@ licences travel with it and are reproduced here too.
 | [loglevelnext](https://github.com/shellscape/loglevelnext) 3.x | MPL-2.0 | `LICENSE-loglevelnext.txt` |
 | [core-js](https://github.com/zloirock/core-js) (via `@babel/runtime-corejs3`) | MIT | `LICENSE-core-js.txt` |
 
-The one that needs a word of explanation is loglevelnext, because MPL-2.0 next
-to AGPL-3.0 is the kind of pairing that looks wrong at a glance. It is fine, and
-specifically: none of loglevelnext's source files carries the Exhibit B
-"Incompatible With Secondary Licenses" notice, so MPL-2.0 §3.3 permits its
-distribution as part of a Larger Work under a Secondary License, and the GNU
-AGPL v3 is named as a Secondary License in §1.13. The MPL still governs those
-files themselves, which is why the full text is here rather than summarised.
+loglevelnext is under MPL-2.0, the same licence as this project. The MPL governs
+its files themselves, which is why the full text is here rather than summarised.
+Where the editor is bundled into an AGPL-3.0 work (Carino DICOM serves it at
+`/editor/`), that pairing is fine too: none of loglevelnext's source files
+carries the Exhibit B "Incompatible With Secondary Licenses" notice, so MPL-2.0
+§3.3 permits its distribution as part of a Larger Work under a Secondary
+License, and the GNU AGPL v3 is named as a Secondary License in §1.13.
 
 ### OCR, for Find burned-in text
 

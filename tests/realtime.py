@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 """Runs one test page in headless Chromium on the REAL clock, for run.sh.
 
 run.sh normally dumps the DOM after --virtual-time-budget, and that clock only

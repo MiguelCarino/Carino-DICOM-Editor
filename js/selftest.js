@@ -1,3 +1,7 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
+
 // Browser self-test (#selftest): runs tests/suites in the visitor's browser and reports
 // which transfer syntaxes / photometric interpretations this browser decodes.
 // Page-load route only: suites mutate session state, so it never runs over an open study

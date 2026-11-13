@@ -1,3 +1,7 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
+
 // Writes sbom.spdx.json: an SPDX 2.3 software bill of materials for everything in this tree that
 // someone else wrote — the vendored bundles, the WebAssembly codecs and the C libraries compiled
 // into them, the OCR engine and model, and the web fonts. Run from the repo root:

@@ -5,7 +5,7 @@
   "description": "Desktop window for the Carino DICOM Editor — open, inspect, edit and de-identify DICOM files on your own machine",
   "author": { "name": "Miguel Carino", "email": "hello@carino.systems" },
   "homepage": "https://github.com/MiguelCarino/Carino-DICOM-Editor",
-  "license": "AGPL-3.0-or-later",
+  "license": "MPL-2.0",
   "main": "main.js",
   "desktopName": "carino-dicom-editor.desktop",
   "scripts": {

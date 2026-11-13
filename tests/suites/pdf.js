@@ -1,3 +1,7 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
+
 // Reports download as PDF or HTML files; nothing opens the print dialog. Every report button shows
 // the report first (js/report-preview.js); the File PDF | HTML switch picks the file and Download
 // writes it.

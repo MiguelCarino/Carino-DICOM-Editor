@@ -1,7 +1,7 @@
 # Changelog
 
 All notable changes to Carino DICOM Editor. Versions follow [Semantic Versioning](https://semver.org/).
-Licensed under **AGPL-3.0-or-later** (see [LICENSE](LICENSE)).
+Licensed under the **Mozilla Public License 2.0** (see [LICENSE](LICENSE)).
 
 ## [Unreleased]
 
@@ -57,6 +57,14 @@ Licensed under **AGPL-3.0-or-later** (see [LICENSE](LICENSE)).
   fixes since 2.5.0. Its tarball ships no LICENSE; the MIT text is the monorepo's, unchanged.
 
 ### Fixed
+- **One licence, stated the same way everywhere.** The project is MPL-2.0 (`LICENSE`, the
+  README), but the desktop app's `package.json` and its Help menu still said AGPL-3.0 from
+  before the July change, as did the first line of this file. They now say MPL-2.0. Every
+  source file of the editor's own carries the MPL notice (Exhibit A) the README describes;
+  none did. Not given one: `vendor/` and `fonts/` (their own licences), the shared `carino-*`
+  files and `404.html` (copied in from their canonical repositories), and the macOS
+  entitlements file. `tools/make-deid-profile.mjs` writes the notice, so a regenerated
+  `deid-profile.js` keeps it.
 - **HTJ2K `.203` was treated as ordinary JPEG 2000.** Only `.201` and `.202` were flagged as
   High-Throughput, so a `.203` file skipped the HTJ2K branch and reached the decoder on its magic
   bytes alone, and any failure was reported as a broken JPEG 2000 codestream.
