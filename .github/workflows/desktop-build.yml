@@ -53,29 +53,32 @@ jobs:
       # does NOT suppress is the per-format respelling in builder-util's
       # getArtifactArchName — x64 becomes x86_64 for AppImage and rpm but amd64
       # for deb, and arm64 becomes aarch64 for rpm alone. Hence six Linux names
-      # in four spellings of two architectures. Windows has one entry because
-      # nsis given both arches emits ONE installer carrying both payloads.
+      # in four spellings of two architectures. Windows has one installer per
+      # architecture: nsis given both arches in one run emits ONE installer
+      # carrying both payloads, twice the download for everyone, so that leg runs
+      # electron-builder once per arch (see the build step).
       matrix:
         include:
           # Pinned like Retina and Carino DICOM: ubuntu-latest moved to an image with
           # rpm 6, which the fpm electron-builder bundles cannot package for.
           - os: ubuntu-24.04
             expect: |
-              Carino-DICOM-Editor-1.2.0-x86_64.AppImage
-              Carino-DICOM-Editor-1.2.0-arm64.AppImage
-              Carino-DICOM-Editor-1.2.0-x86_64.rpm
-              Carino-DICOM-Editor-1.2.0-aarch64.rpm
-              Carino-DICOM-Editor-1.2.0-amd64.deb
-              Carino-DICOM-Editor-1.2.0-arm64.deb
+              Carino-DICOM-Editor-1.3.0-x86_64.AppImage
+              Carino-DICOM-Editor-1.3.0-arm64.AppImage
+              Carino-DICOM-Editor-1.3.0-x86_64.rpm
+              Carino-DICOM-Editor-1.3.0-aarch64.rpm
+              Carino-DICOM-Editor-1.3.0-amd64.deb
+              Carino-DICOM-Editor-1.3.0-arm64.deb
           - os: macos-latest
             expect: |
-              Carino-DICOM-Editor-1.2.0-x64.dmg
-              Carino-DICOM-Editor-1.2.0-arm64.dmg
-              Carino-DICOM-Editor-1.2.0-x64.zip
-              Carino-DICOM-Editor-1.2.0-arm64.zip
+              Carino-DICOM-Editor-1.3.0-x64.dmg
+              Carino-DICOM-Editor-1.3.0-arm64.dmg
+              Carino-DICOM-Editor-1.3.0-x64.zip
+              Carino-DICOM-Editor-1.3.0-arm64.zip
           - os: windows-latest
             expect: |
-              Carino-DICOM-Editor-Setup-1.2.0.exe
+              Carino-DICOM-Editor-Setup-1.3.0-x64.exe
+              Carino-DICOM-Editor-Setup-1.3.0-arm64.exe
     runs-on: ${{ matrix.os }}
 
     steps:
@@ -126,14 +129,25 @@ jobs:
       # the runner's own architecture — that is why Carino DICOM's v1.1.0-rc02 went
       # out with an arm64 dmg and no Intel one at all. No platform flag is needed;
       # with none given electron-builder falls back to the current platform while
-      # still honouring --x64/--arm64. Windows resolves to a SINGLE combined NSIS
-      # installer that picks its payload at install time, which is also why the
-      # win artifactName in desktop/package.json omits ${arch} on purpose — that
-      # note cannot live next to the key itself, as electron-builder's config
-      # schema is additionalProperties:false and rejects any comment key.
+      # still honouring --x64/--arm64. Windows is the exception: one nsis run
+      # given both arches makes a SINGLE combined installer that carries both
+      # payloads (162 MB in 1.2.0 against ~80 MB for one). So Windows runs once
+      # per arch, and the win artifactName in desktop/package.json carries
+      # ${arch} so the two runs write two files instead of one overwriting the
+      # other. That note cannot live next to the key itself, as
+      # electron-builder's config schema is additionalProperties:false and
+      # rejects any comment key.
       - name: Build installers (electron-builder)
         working-directory: desktop
-        run: npx --no-install electron-builder --publish never --x64 --arm64
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            npx --no-install electron-builder --publish never --win --x64
+            npx --no-install electron-builder --publish never --win --arm64
+          else
+            npx --no-install electron-builder --publish never --x64 --arm64
+          fi
 
       - name: Verify this leg produced everything it promised
         shell: bash

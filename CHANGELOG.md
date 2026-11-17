@@ -5,7 +5,15 @@ Licensed under the **Mozilla Public License 2.0** (see [LICENSE](LICENSE)).
 
 ## [Unreleased]
 
+## [1.3.0] — 2026-11-17
+
 ### Added
+- **A Colourful theme beside Gold.** A switch in the navbar picks it, and the choice carries to
+  every carino.systems page. Colour marks what can be clicked and the identity marks; the rest
+  stays as quiet as Gold.
+- **Export ▸ Open in Files (website only).** Hands the file on screen to files.carino.systems; a
+  file edited this session goes with its original, and Files opens the two on Compare. Hidden in
+  the desktop app and in the copy Carino DICOM serves, which Files does not accept.
 - **Reports as PDF or HTML.** Every report preview (tag dump, Overview, Comparison, Change report)
   has a File PDF | HTML switch above the file name; the one Download button and the file name
   follow it, and the choice is remembered. The HTML file is the report document itself (inline
@@ -50,6 +58,13 @@ Licensed under the **Mozilla Public License 2.0** (see [LICENSE](LICENSE)).
   the gap it fills.
 
 ### Changed
+- **Windows has one installer per architecture.** `Carino-DICOM-Editor-Setup-1.3.0-x64.exe` and
+  `…-arm64.exe` replace the single installer that carried both (162 MB in 1.2.0); each is about
+  half that. The download card already picks the right one from the file name.
+- **The navbar: the mark, Carino and the product name, the clock and one About button.** The
+  About window has tabs (About, How to use, Contact, Licence, Language, Legal), and replaces the
+  page footer; the privacy line now sits in its disclaimer. The module tabs stay under the
+  navbar while the page scrolls.
 - **`vendor/`: the full JPEG 2000 and JPEG-LS builds replace the decode-only ones**
   (`openjpegwasm.*`, `charlswasm.*`), since Compress calls their encoders: 117 KB and 72 KB more
   WebAssembly, loaded only when a file of that syntax is opened or compressed.
